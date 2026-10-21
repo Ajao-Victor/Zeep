@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-gold: var(--gold);
+  --color-gold-hover: var(--gold-hover);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-on-gold: var(--on-gold);
+  --color-raised: var(--raised);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+::selection {
+  background: #3a3426;
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@keyframes zeep-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes zeep-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.zeep-pulse {
+  animation: zeep-pulse 2.4s ease-in-out infinite;
+}
+
+.zeep-in {
+  animation: zeep-in 350ms ease;
+}
+
+.step-card {
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.step-card:hover {
+  transform: scale(1.02);
+  border-color: var(--gold);
+  background: var(--raised);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zeep-pulse,
+  .zeep-in {
+    animation: none;
+  }
+
+  .step-card,
+  .step-card:hover {
+    transition: background-color 150ms ease, border-color 150ms ease;
+    transform: none;
+  }
+}

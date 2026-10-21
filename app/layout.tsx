@@ -1,0 +1,26 @@
+import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { config } from "@/lib/config";
+import { Providers } from "@/components/Providers";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
+
+export const metadata: Metadata = {
+  metadataBase: new URL(config.appUrl),
+  title: { default: config.appName, template: `%s · ${config.appName}` },
+  description:
+    "Deposit shielded ZEC and use private AI, search, health lookups, blockchain access and an anonymous inbox. Every request is paid in zatoshis with one zero-knowledge proof.",
+  referrer: "no-referrer",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <body className="bg-bg font-sans text-[15px] text-text antialiased">
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}

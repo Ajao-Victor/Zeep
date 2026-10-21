@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+.vercel
+.env
+.env.*
+!.env.example
+.zeep-front-snapshot.tgz
+*.tgz
+*.log
+.DS_Store
+playwright-report
+test-results
+tsconfig.tsbuildinfo

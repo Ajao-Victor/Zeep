@@ -1,0 +1,16 @@
+:root {
+  --bg: #0f0f0e;
+  --surface: #151513;
+  --line: #22211e;
+  --line-strong: #2e2c28;
+  --text: #ece8e1;
+  --muted: #8c877d;
+  --faint: #6f6b62;
+  --gold: #d9a441;
+  --gold-hover: #e6b656;
+  --ok: #9cb58a;
+  --warn: #d98a41;
+  --danger: #d06b5c;
+  --on-gold: #141311;
+  --raised: #1c1b18;
+}
