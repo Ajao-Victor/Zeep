@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SERVICES } from "@/lib/catalog";
+import { Faq } from "@/components/landing/Faq";
 import { ProofFlowCanvas } from "@/components/landing/ProofFlowCanvas";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
@@ -65,6 +66,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <Faq />
     </main>
   );
 }

@@ -15,6 +15,7 @@ const PUBLIC = [
   { href: "/services", label: "Services" },
   { href: "/#how", label: "How it works" },
   { href: "/reserve", label: "Refunds" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 const APP = [
@@ -33,6 +34,23 @@ function current(href: string, pathname: string) {
   return href === pathname;
 }
 
+function scrollToSection(href: string) {
+  if (typeof window === "undefined") return;
+  const id = href.startsWith("/#") ? href.slice(2) : "";
+  const node = id ? document.getElementById(id) : null;
+  if (!node) return;
+  const header = document.querySelector("header")?.getBoundingClientRect().height ?? 64;
+  const top = node.getBoundingClientRect().top + window.scrollY - header - 16;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
+
+function onSectionLink(event: { preventDefault: () => void }, href: string) {
+  if (typeof window === "undefined" || window.location.pathname !== "/" || !href.startsWith("/#")) return;
+  event.preventDefault();
+  window.history.replaceState(null, "", href);
+  scrollToSection(href);
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const { view, chooseNetwork, lock } = useVault();
@@ -43,6 +61,14 @@ export function SiteHeader() {
 
   useEffect(() => {
     setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname !== "/") return;
+    const id = window.location.hash.replace(/^#/, "");
+    if (!id) return;
+    const timer = window.setTimeout(() => scrollToSection(`/#${id}`), 50);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   useEffect(() => {
@@ -90,7 +116,7 @@ export function SiteHeader() {
             <Dialog.Content className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-r border-line bg-bg outline-none sm:w-[320px]">
               <div className="flex h-16 items-center justify-between border-b border-line px-4">
                 <Dialog.Title className="text-[15px] font-medium">Menu</Dialog.Title>
-                <Dialog.Description className="sr-only">Services, how it works, refunds, and docs.</Dialog.Description>
+                <Dialog.Description className="sr-only">Services, how it works, refunds, and FAQ.</Dialog.Description>
                 <Dialog.Close className="rounded-lg border border-line-strong px-3 py-1.5 text-[13px] text-muted hover:bg-raised hover:text-text">
                   Close
                 </Dialog.Close>
@@ -100,7 +126,10 @@ export function SiteHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(event) => {
+                      setMenuOpen(false);
+                      onSectionLink(event, item.href);
+                    }}
                     className={cx(
                       "rounded-lg px-3 py-3",
                       current(item.href, pathname) ? "bg-raised text-text" : "text-muted hover:bg-raised hover:text-text",
@@ -109,11 +138,6 @@ export function SiteHeader() {
                     {item.label}
                   </Link>
                 ))}
-                {config.docsUrl ? (
-                  <a href={config.docsUrl} className="rounded-lg px-3 py-3 text-muted hover:bg-raised hover:text-text" rel="noreferrer" onClick={() => setMenuOpen(false)}>
-                    Docs
-                  </a>
-                ) : null}
                 {view.status === "unlocked" ? (
                   <>
                     <p className="px-3 pb-1 pt-4 text-[12px] text-faint">This balance</p>
@@ -138,15 +162,10 @@ export function SiteHeader() {
         </Dialog.Root>
         <nav className="hidden min-w-0 items-center gap-6 text-[14px] text-muted lg:flex">
           {PUBLIC.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:text-text">
+            <Link key={item.href} href={item.href} onClick={(event) => onSectionLink(event, item.href)} className="hover:text-text">
               {item.label}
             </Link>
           ))}
-          {config.docsUrl ? (
-            <a href={config.docsUrl} className="hover:text-text" rel="noreferrer">
-              Docs
-            </a>
-          ) : null}
         </nav>
         <div className="flex-1" />
         <Tooltip.Provider delayDuration={200}>

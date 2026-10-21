@@ -23,6 +23,7 @@
 html {
   color-scheme: dark;
   background: var(--bg);
+  scroll-padding-top: 5rem;
 }
 
 body {
