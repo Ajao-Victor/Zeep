@@ -1,6 +1,6 @@
 import { config, apiBase, type Network } from "@/lib/config";
 import { fromHex, hex, randomBytes, zero } from "@/lib/bytes";
-import { deriveKeys, NoteBook, seedFromPhrase, ZeepClient } from "@/lib/zeep";
+import { deriveKeys, NoteBook, seedFromPhrase, USD, ZEC, ZeepClient } from "@/lib/zeep";
 import { workerProve, stopProver } from "@/lib/zeep/prove";
 import { kvDel, kvGet, kvSet, storeKey } from "@/lib/vault/db";
 import { decryptBytes, decryptJson, encryptBytes, encryptJson, importAes } from "@/lib/vault/crypto";
@@ -80,7 +80,9 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
       const current = readSession();
       if (!current || current.network !== network) return;
       await kvSet(storeKey.notes(network), await encryptJson(key, next.toJSON()));
-      current.balanceZats = next.balance();
+      const balances = { usd: next.balance(USD), zec: next.balance(ZEC) };
+      current.usdMicro = balances.usd;
+      current.zecZats = balances.zec;
       emit();
     },
   });
@@ -93,10 +95,10 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
     client,
     record,
     hasPasskey: Boolean(meta.credentialId && meta.prfWrap),
-    balanceZats: book.balance(),
+    usdMicro: book.balance(USD),
+    zecZats: book.balance(ZEC),
     prices: null,
-    walletZats: null,
-    receiveAddress: "",
+    wallet: null,
   });
   await kvSet(storeKey.meta(network), { ...meta, failedAttempts: 0, wipedAt: undefined });
   void client.refreshSpent().catch(() => {});
@@ -246,10 +248,12 @@ export async function restoreVault(input: { network: Network; pin: string; phras
   await mint(input);
   const session = readSession();
   if (!session) throw new Error("The vault did not open.");
-  const balance = await session.client.restore();
-  session.balanceZats = balance;
+  await session.client.restore();
+  const balances = session.client.balances();
+  session.usdMicro = balances.usd;
+  session.zecZats = balances.zec;
   emit();
-  return balance;
+  return balances;
 }
 
 export async function lockVault() {

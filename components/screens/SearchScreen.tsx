@@ -16,7 +16,7 @@ export function SearchScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
-  const price = view.prices?.routes.search.zats;
+  const price = view.prices?.routes.search.micro_usd;
 
   async function search() {
     const session = readSession();

@@ -48,9 +48,13 @@ export function deriveKeys(seed: Uint8Array): ZeepKeys {
   };
 }
 
-/** Deposit number i: its intent id (sent to the server) and its note secret rho (kept). */
-export function depositSlot(keys: ZeepKeys, i: number): { intentId: string; rho: bigint; d: bigint } {
+/**
+ * Deposit number i: its intent id (sent to the server) and the secrets of its two notes
+ * (kept): the dollar note (rho, d) and the ZEC note (rhoZec, dZec).
+ */
+export function depositSlot(keys: ZeepKeys, i: number): { intentId: string; rho: bigint; d: bigint; rhoZec: bigint; dZec: bigint } {
   const intentId = bytesToHex(hmac(sha256, keys.intentKey, utf8ToBytes(`intent:${i}`)));
   const rho = poseidon2([keys.sk, 2n ** 40n + BigInt(i)]);
-  return { intentId, rho, d: poseidon2([keys.pk, rho]) };
+  const rhoZec = poseidon2([keys.sk, 2n ** 41n + BigInt(i)]);
+  return { intentId, rho, d: poseidon2([keys.pk, rho]), rhoZec, dZec: poseidon2([keys.pk, rhoZec]) };
 }

@@ -41,4 +41,5 @@ export const storeKey = {
   chatPrefs: (network: Network) => `chat-prefs:${network}`,
   chatIds: (network: Network) => `chat-ids:${network}`,
   chat: (network: Network, id: string) => `chat:${network}:${id}`,
+  feeDay: (network: Network) => `fee-day:${network}`,
 };

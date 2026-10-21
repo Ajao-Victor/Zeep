@@ -11,14 +11,10 @@ export function ServicesScreen() {
   const { view } = useVault();
   return (
     <Page>
-      <PageIntro kicker="Services" title="Pay per request, in ZEC." lede="Each button takes one proof. The price is the live sheet, shown in credits." />
+      <PageIntro kicker="Services" title="Pay per request." lede="Each request is one proof. The price is the live sheet, shown in credits." />
       <div className="mb-4">
         <Panel>
           <p className="font-mono text-[22px] text-gold">{view.creditLabel} cr</p>
-          <p className="mt-1 text-[13px] text-muted">{view.zecLabel} ZEC in the private balance</p>
-          {view.walletZats !== null ? (
-            <p className="mt-1 text-[13px] text-faint">In-app wallet: {view.walletZats} zats</p>
-          ) : null}
           <div className="mt-4">
             <Button href="/deposit">Deposit</Button>
           </div>
@@ -26,10 +22,10 @@ export function ServicesScreen() {
       </div>
       <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2">
         {SERVICES.map((service) => {
-          const zats = service.route
-            ? view.prices?.routes[service.route]?.zats
-            : view.prices?.models.find((model) => model.id === view.prices?.default_model)?.zats;
-          const price = zats === undefined ? "…" : service.route ? `${formatCredits(zats, view.zatsPerCredit)} cr` : `from ${formatCredits(zats, view.zatsPerCredit)} cr`;
+          const micro = service.route
+            ? view.prices?.routes[service.route]?.micro_usd
+            : view.prices?.models.find((model) => model.id === view.prices?.default_model)?.micro_usd;
+          const price = micro === undefined ? "…" : service.route ? `${formatCredits(micro, view.microPerCredit)} cr` : `from ${formatCredits(micro, view.microPerCredit)} cr`;
           return <ServiceCard key={service.id} name={service.name} summary={service.summary} href={service.href} cost={price} />;
         })}
         {SERVICES.length % 2 === 1 ? (

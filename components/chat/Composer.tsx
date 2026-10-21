@@ -37,7 +37,7 @@ export function Composer({
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const model = prices?.models.find((item) => item.id === modelId) ?? prices?.models[0];
   const vision = Boolean(model?.vision);
-  const perMb = prices ? formatCredits(prices.attachments.zats_per_mb, prices.zats_per_credit) : "…";
+  const perMb = prices ? formatCredits(prices.attachments.micro_usd_per_mb, prices.micro_usd_per_credit) : "…";
 
   function grow() {
     const box = boxRef.current;
@@ -129,7 +129,7 @@ export function Composer({
           <DropdownMenu.Portal>
             <DropdownMenu.Content className="z-50 max-h-80 w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-line bg-surface p-1" side="top" align="start">
               {(prices?.models ?? []).map((item) => (
-                <ModelRow key={item.id} item={item} perCredit={prices?.zats_per_credit ?? 10_000} onPick={() => onModel(item.id)} />
+                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} zecUsd={prices?.zec_usd ?? 0} onPick={() => onModel(item.id)} />
               ))}
               <p className="px-3 py-2 text-[12px] leading-relaxed text-faint">Attachments over 64 KB add {perMb} cr per MB.</p>
             </DropdownMenu.Content>
@@ -148,7 +148,8 @@ export function Composer({
   );
 }
 
-function ModelRow({ item, perCredit, onPick }: { item: PriceModel; perCredit: number; onPick: () => void }) {
+function ModelRow({ item, perCredit, zecUsd, onPick }: { item: PriceModel; perCredit: number; zecUsd: number; onPick: () => void }) {
+  const zats = !zecUsd || item.micro_usd <= 0 ? 0n : BigInt(Math.floor((item.micro_usd / 1e6 / zecUsd) * 1e8));
   return (
     <DropdownMenu.Item onSelect={onPick} className="cursor-pointer rounded-md px-3 py-2 outline-none data-[highlighted]:bg-raised">
       <span className="flex items-center justify-between gap-3">
@@ -160,10 +161,10 @@ function ModelRow({ item, perCredit, onPick }: { item: PriceModel; perCredit: nu
         <Tooltip.Provider delayDuration={200}>
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
-              <span className="shrink-0 font-mono text-[12px] text-gold">{formatCredits(item.zats, perCredit)} cr</span>
+              <span className="shrink-0 font-mono text-[12px] text-gold">{formatCredits(item.micro_usd, perCredit)} cr</span>
             </Tooltip.Trigger>
             <Tooltip.Portal>
-              <Tooltip.Content className="z-50 rounded-lg border border-line bg-bg px-2 py-1 text-[12px]">{formatZec(item.zats)} ZEC</Tooltip.Content>
+              <Tooltip.Content className="z-50 rounded-lg border border-line bg-bg px-2 py-1 text-[12px]">{formatZec(zats)} ZEC</Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
         </Tooltip.Provider>

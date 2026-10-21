@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { config, type Network } from "@/lib/config";
-import { formatCredits, formatZec } from "@/lib/zeep";
+import { formatCredits, formatUsd, formatZec, zatsToMicroUsd } from "@/lib/zeep";
 import type { PriceSheet } from "@/lib/zeep/prices";
 import { emit, readSession, subscribe } from "@/lib/vault/session";
 import { lockVault, readPrefs, switchNetwork, vaultStatus } from "@/lib/vault/vault";
@@ -16,13 +16,12 @@ export type VaultView = {
   hasPasskey: boolean;
   inboxId: string | null;
   inboxAddress: string | null;
-  balanceZats: string;
   creditLabel: string;
-  zecLabel: string;
-  zatsPerCredit: number;
+  usdLabel: string;
+  zecHeldLabel: string;
+  zecValueLabel: string;
+  microPerCredit: number;
   prices: PriceSheet | null;
-  walletZats: string | null;
-  receiveAddress: string;
 };
 
 const VaultContext = createContext<{
@@ -40,20 +39,21 @@ function blank(network: Network): VaultView {
     hasPasskey: false,
     inboxId: null,
     inboxAddress: null,
-    balanceZats: "0",
     creditLabel: "…",
-    zecLabel: "0",
-    zatsPerCredit: 10_000,
+    usdLabel: "$0.00",
+    zecHeldLabel: "0",
+    zecValueLabel: "…",
+    microPerCredit: 1_000_000,
     prices: null,
-    walletZats: null,
-    receiveAddress: "",
   };
 }
 
 function fromSession(network: Network): VaultView {
   const session = readSession();
   if (!session || session.network !== network) return { ...blank(network), ready: true, status: "locked" };
-  const per = session.prices?.zats_per_credit ?? 10_000;
+  const prices = session.prices;
+  const per = prices?.micro_usd_per_credit ?? 1_000_000;
+  const zecUsd = prices?.zec_usd ?? 0;
   return {
     ready: true,
     network,
@@ -61,13 +61,12 @@ function fromSession(network: Network): VaultView {
     hasPasskey: session.hasPasskey,
     inboxId: session.record.inboxId,
     inboxAddress: session.record.inboxAddress,
-    balanceZats: session.balanceZats.toString(),
-    creditLabel: session.prices ? formatCredits(session.balanceZats, per) : "…",
-    zecLabel: formatZec(session.balanceZats),
-    zatsPerCredit: per,
-    prices: session.prices,
-    walletZats: session.walletZats === null ? null : session.walletZats.toString(),
-    receiveAddress: session.receiveAddress,
+    creditLabel: prices ? formatCredits(session.client.totalMicroUsd(zecUsd), per) : "…",
+    usdLabel: formatUsd(session.usdMicro),
+    zecHeldLabel: formatZec(session.zecZats),
+    zecValueLabel: prices ? formatUsd(zatsToMicroUsd(session.zecZats, zecUsd)) : "…",
+    microPerCredit: per,
+    prices,
   };
 }
 

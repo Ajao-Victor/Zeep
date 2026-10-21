@@ -5,7 +5,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line py-7 text-[13px] text-faint">
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 sm:px-8">
-        <span>Zeep · private access, paid in shielded ZEC</span>
+        <span>Zeep · a shielded balance</span>
         <span className="flex flex-wrap items-center gap-x-2">
           {config.sourceUrl ? (
             <a href={config.sourceUrl} className="hover:text-text" rel="noreferrer">
@@ -14,7 +14,7 @@ export function SiteFooter() {
           ) : (
             <span>Open source</span>
           )}
-          <span>Reserve covers 100% of unused credits</span>
+          <span>Public reserve</span>
           <span className="font-mono">{sha}</span>
         </span>
       </div>

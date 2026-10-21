@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SERVICES } from "@/lib/catalog";
 import { fromHex } from "@/lib/bytes";
-import { parseZec } from "@/lib/zeep";
+import { parseZec, ZEC } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
@@ -29,7 +29,7 @@ export function AgentsScreen() {
     try {
       const zats = parseZec(amount);
       const key = noteKey.trim() ? fromHex(noteKey.trim()) : undefined;
-      await session.client.fund(BigInt(pk.trim()), zats, key);
+      await session.client.fund(ZEC, BigInt(pk.trim()), zats, key);
       setName("");
     } catch (cause) {
       setFunds(isFundsError(cause));
@@ -41,7 +41,7 @@ export function AgentsScreen() {
 
   return (
     <Page narrow>
-      <PageIntro kicker="Agents" title="Move ZEC to another spend key." lede="The transfer is one spend proof. The recipient's note key lets them read the output." />
+      <PageIntro kicker="Agents" title="Move ZEC notes to another spend key." lede="The transfer is one spend proof. The recipient's note key lets them read the output." />
       <Panel>
         <div className="grid gap-3">
           <TextField label="Label, kept on this device" value={name} onChange={setName} />

@@ -30,8 +30,8 @@ export async function readPaid<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export async function payJson<T>(client: ZeepClient, method: string, path: string, value: unknown, zats: bigint): Promise<T> {
+export async function payJson<T>(client: ZeepClient, method: string, path: string, value: unknown, costMicroUsd: bigint): Promise<T> {
   const body = JSON.stringify(value);
-  const response = await client.pay(method, path, body, zats);
+  const response = await client.pay(method, path, body, costMicroUsd);
   return readPaid<T>(response);
 }

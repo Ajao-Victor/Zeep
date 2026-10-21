@@ -36,6 +36,7 @@ export const config = {
     testnet: process.env.NEXT_PUBLIC_LIGHTWALLETD_URL_TESTNET || "",
     mainnet: process.env.NEXT_PUBLIC_LIGHTWALLETD_URL_MAINNET || "",
   },
+  autoshieldMinZats: asNumber(process.env.NEXT_PUBLIC_AUTOSHIELD_MIN_ZATS, 100_000),
   pinLength: asNumber(process.env.NEXT_PUBLIC_PIN_LENGTH, 6),
   pinMaxAttempts: asNumber(process.env.NEXT_PUBLIC_PIN_MAX_ATTEMPTS, 5),
   argon2MemoryKib: asNumber(process.env.NEXT_PUBLIC_ARGON2_MEMORY_KIB, 65536),

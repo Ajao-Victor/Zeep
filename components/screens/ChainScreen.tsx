@@ -17,7 +17,7 @@ export function ChainScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
-  const price = view.prices?.routes.rpc100.zats;
+  const price = view.prices?.routes.rpc100.micro_usd;
 
   async function call() {
     const session = readSession();

@@ -20,7 +20,7 @@ export default function HomePage() {
             <span className="text-muted">Stay unlinkable.</span>
           </h1>
           <p className="mt-[22px] max-w-[470px] text-[17px] leading-relaxed text-muted">
-            Deposit any amount of shielded ZEC. Private AI, search, health lookups, blockchain access and an anonymous inbox are paid in zatoshis, one zero-knowledge proof per request. Credits are only how the balance is shown.
+            Deposit any amount of ZEC. Half stays as your ZEC, and half becomes dollars. Services are paid from the dollar balance, one zero-knowledge proof per request. Credits show both together.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/get" className="inline-flex items-center rounded-lg bg-gold px-[18px] py-3 text-[15px] font-medium text-on-gold transition-[background-color,transform] duration-150 hover:bg-gold-hover motion-safe:hover:-translate-y-px">
@@ -45,7 +45,7 @@ export default function HomePage() {
         <div className="mt-9 grid gap-4 md:grid-cols-3">
           {[
             ["01", "Deposit any amount", "A fresh address, no memo. Pay from the in-app wallet or any other wallet. Whatever arrives is credited."],
-            ["02", "One proof per request", "Each request is paid in zatoshis. The proof shows the payment, not who you are. Credits are only the display."],
+            ["02", "One proof per request", "Each request spends dollars. The proof shows the payment, not who you are."],
             ["03", "Use it, or withdraw", "Five services share one private balance. Withdraw any amount above the minimum, in two parts about 10 and 20 minutes apart."],
           ].map(([n, title, body]) => (
             <article key={n} className="step-card h-full rounded-xl border border-line bg-surface p-6">
@@ -60,7 +60,7 @@ export default function HomePage() {
             <div key={service.id} className="flex h-full flex-col bg-bg p-5 transition-colors duration-150 last:sm:col-span-2 last:lg:col-span-1 hover:bg-raised">
               <b className="text-[15px] font-medium">{service.name}</b>
               <p className="mt-1.5 text-[13px] leading-normal text-muted">{service.summary}</p>
-              <span className="mt-auto block pt-3 font-mono text-[12px] text-gold">Priced in ZEC</span>
+              <span className="mt-auto block pt-3 font-mono text-[12px] text-gold">Priced in credits</span>
             </div>
           ))}
         </div>

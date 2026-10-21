@@ -15,7 +15,7 @@ export function HealthScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
-  const price = view.prices?.routes.health.zats;
+  const price = view.prices?.routes.health.micro_usd;
 
   async function lookup() {
     const session = readSession();

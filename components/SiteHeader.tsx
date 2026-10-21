@@ -172,8 +172,10 @@ export function SiteHeader() {
                   </Link>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
-                  <Tooltip.Content className="z-40 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-text">
-                    {view.zecLabel} ZEC in the Zeep balance
+                  <Tooltip.Content className="z-40 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] leading-relaxed text-text">
+                    <span className="block">Credits (dollars): {view.usdLabel}</span>
+                    <span className="block">ZEC: {view.zecHeldLabel} ZEC ≈ {view.zecValueLabel}</span>
+                    <span className="block">Total: {view.creditLabel} cr</span>
                   </Tooltip.Content>
                 </Tooltip.Portal>
               </Tooltip.Root>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { chatCostZats } from "@/lib/zeep/prices";
+import { chatCostMicro } from "@/lib/zeep/prices";
 import { isFundsError } from "@/lib/zeep/pay";
 import { readSse } from "@/lib/api/sse";
 import { readSession } from "@/lib/vault/session";
@@ -141,7 +141,7 @@ export function ChatScreen() {
         "POST",
         "/v1/ai/chat/completions",
         body,
-        chatCostZats(model.zats, bytes, prices.attachments.zats_per_mb),
+        chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb),
       );
       let text = "";
       await readSse(response, (delta) => {

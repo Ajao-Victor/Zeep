@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { config } from "@/lib/config";
 import { errorText } from "@/lib/format";
 import { passkeySupported, unlockPasskey } from "@/lib/vault/passkey";
+import { readSession } from "@/lib/vault/session";
 import { PinError, verifyPin, verifyPrf } from "@/lib/vault/vault";
 import { useVault } from "@/components/Providers";
 
@@ -20,8 +21,20 @@ export function Reauth({
   const { view } = useVault();
   const router = useRouter();
   const [pin, setPin] = useState("");
+  const [phrase, setPhrase] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  function submitPhrase() {
+    const session = readSession();
+    const typed = phrase.trim().toLowerCase().split(/\s+/).join(" ");
+    setPhrase("");
+    if (!session || typed !== session.phrase) {
+      setError("Those words do not match this pass.");
+      return;
+    }
+    onSuccess();
+  }
 
   async function submit(kind: "pin" | "passkey") {
     setBusy(true);
@@ -65,6 +78,19 @@ export function Reauth({
           Cancel
         </Button>
       </div>
+      <label className="mt-4 block text-[13px] text-muted">
+        Or the recovery phrase
+        <textarea
+          value={phrase}
+          onChange={(event) => setPhrase(event.target.value)}
+          rows={3}
+          autoComplete="off"
+          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-[14px] text-text outline-none"
+        />
+      </label>
+      <Button className="mt-2" variant="secondary" disabled={busy || phrase.trim().split(/\s+/).length < 12} onClick={submitPhrase}>
+        Confirm phrase
+      </Button>
     </div>
   );
 }

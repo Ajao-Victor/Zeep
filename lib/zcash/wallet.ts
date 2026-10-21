@@ -1,8 +1,24 @@
 import { config, type Network } from "@/lib/config";
 
-export type WalletSummary = { zats: bigint; address: string };
+export type WalletSummary = {
+  shieldedZats: bigint;
+  transparentZats: bigint;
+  unified: string;
+  transparentAddress: string;
+  shielding: boolean;
+};
 
-type Reply = { id: string; ok: true; zats?: string; address?: string } | { id: string; ok: false; error: string };
+type Reply =
+  | {
+      id: string;
+      ok: true;
+      shieldedZats?: string;
+      transparentZats?: string;
+      unified?: string;
+      transparentAddress?: string;
+      shielding?: boolean;
+    }
+  | { id: string; ok: false; error: string };
 
 let worker: Worker | null = null;
 const waiters = new Map<string, (value: Reply) => void>();
@@ -33,9 +49,16 @@ export async function walletSummary(phrase: string, network: Network): Promise<W
     phrase,
     network,
     url: config.lightwalletd[network],
+    minZats: String(config.autoshieldMinZats),
   });
-  if (!result.ok || !result.address) throw new Error(result.ok ? "The wallet returned no address." : result.error);
-  return { zats: BigInt(result.zats ?? "0"), address: result.address };
+  if (!result.ok || !result.unified) throw new Error(result.ok ? "The wallet returned no address." : result.error);
+  return {
+    shieldedZats: BigInt(result.shieldedZats ?? "0"),
+    transparentZats: BigInt(result.transparentZats ?? "0"),
+    unified: result.unified,
+    transparentAddress: result.transparentAddress ?? "",
+    shielding: Boolean(result.shielding),
+  };
 }
 
 export async function payFromWallet(phrase: string, network: Network, to: string, zats: bigint): Promise<void> {
@@ -46,6 +69,7 @@ export async function payFromWallet(phrase: string, network: Network, to: string
     url: config.lightwalletd[network],
     to,
     zats: zats.toString(),
+    minZats: String(config.autoshieldMinZats),
   });
   if (!result.ok) throw new Error(result.error);
 }

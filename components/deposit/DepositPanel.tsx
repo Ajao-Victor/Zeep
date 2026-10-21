@@ -1,54 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCredits, formatZec, parseZec, creditsToZats } from "@/lib/zeep";
+import { estimateDeposit, formatCredits, formatUsd, formatZec, parseZec } from "@/lib/zeep";
 import type { DepositStatus } from "@/lib/zeep/client";
 import { zip321 } from "@/lib/zcash/zip321";
 import { payFromWallet, walletSummary } from "@/lib/zcash/wallet";
-import { emit, readSession } from "@/lib/vault/session";
+import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { CopyField } from "@/components/CopyField";
 import { Notice, TextField } from "@/components/Panel";
 import { QRPay } from "@/components/QRPay";
 import { useVault } from "@/components/Providers";
 
+type Split = { shareBps: number; feeBps: number };
+
 export function DepositPanel({ onDone }: { onDone?: () => void }) {
   const { view } = useVault();
   const [amount, setAmount] = useState("0.1");
-  const [creditHint, setCreditHint] = useState("");
+  const [split, setSplit] = useState<Split | null>(null);
   const [status, setStatus] = useState<(DepositStatus & { slot: number }) | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
-  const [walletZec, setWalletZec] = useState<string | null>(null);
+  const [canPayHere, setCanPayHere] = useState(false);
 
   useEffect(() => {
     const session = readSession();
     if (!session) return;
+    void session.client.config().then((conf) => {
+      const share = Number(conf?.split?.zec_share_bps);
+      const fee = Number(conf?.deposits?.fee_bps ?? conf?.split?.conversion_fee_bps?.zec_to_usd);
+      if (Number.isFinite(share) && Number.isFinite(fee)) setSplit({ shareBps: share, feeBps: fee });
+    }).catch(() => {});
     void walletSummary(session.phrase, view.network)
-      .then((summary) => {
-        const current = readSession();
-        if (current) {
-          current.walletZats = summary.zats;
-          current.receiveAddress = summary.address;
-          emit();
-        }
-        setWalletZec(summary.zats > 0n ? formatZec(summary.zats) : null);
-      })
-      .catch(() => setWalletZec(null));
+      .then((summary) => setCanPayHere(summary.shieldedZats > 0n || summary.transparentZats > 0n))
+      .catch(() => setCanPayHere(false));
   }, [view.network]);
 
-  function onAmount(value: string) {
-    setAmount(value);
-    const per = view.zatsPerCredit || 10_000;
+  const estimate = (() => {
+    const prices = view.prices;
+    if (!prices || !split) return null;
     try {
-      setCreditHint(`${formatCredits(parseZec(value), per)} cr`);
+      return estimateDeposit(parseZec(amount), prices.zec_usd, split.shareBps, split.feeBps);
     } catch {
-      const asCredits = Number(value);
-      if (Number.isFinite(asCredits) && asCredits > 0) {
-        setCreditHint(`${formatZec(creditsToZats(asCredits, per))} ZEC`);
-      } else setCreditHint("");
+      return null;
     }
-  }
+  })();
 
   async function start() {
     const session = readSession();
@@ -56,14 +52,8 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
     setError("");
     setBusy("Reserving an address…");
     try {
-      let zats: bigint | undefined;
-      try {
-        zats = parseZec(amount);
-      } catch {
-        const credits = Number(amount);
-        if (!Number.isFinite(credits) || credits <= 0) throw new Error("Enter an amount in ZEC, or a number of credits.");
-        zats = creditsToZats(credits, view.zatsPerCredit || 10_000);
-      }
+      const zats = parseZec(amount);
+      if (zats <= 0n) throw new Error("Enter an amount in ZEC.");
       const created = await session.client.startDeposit(zats);
       setStatus(created);
     } catch (cause) {
@@ -100,14 +90,24 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
 
   const zecAmount = status?.expected_zats ? formatZec(status.expected_zats) : amount;
   const uri = status ? zip321(status.address, zecAmount) : "";
+  const credited = status?.credited;
+  const keptZats = estimate ? parseZec(amount) - estimate.zecZats : 0n;
 
   return (
     <div className="grid gap-4">
       {!status ? (
         <>
-          <TextField label="Amount in ZEC, or credits" value={amount} onChange={onAmount} placeholder="0.1" />
-          {creditHint ? <p className="text-[13px] text-muted">{creditHint}. 0.1 ZEC is 1,000 credits.</p> : null}
-          {walletZec ? <p className="text-[13px] text-muted">In-app wallet: {walletZec} ZEC</p> : null}
+          <TextField label="Amount in ZEC" value={amount} onChange={setAmount} placeholder="0.1" />
+          {estimate ? (
+            <div className="text-[13px] leading-relaxed text-muted">
+              <p>≈ {formatCredits(estimate.totalMicro, view.microPerCredit)} credits</p>
+              <p className="mt-1 text-faint">
+                {formatZec(estimate.zecZats)} ZEC kept as ZEC · {formatZec(keptZats)} ZEC → {formatUsd(estimate.usdMicro)} ({(split?.feeBps ?? 0) / 100}% conversion fee). Estimate: the dollar half is fixed when the deposit confirms.
+              </p>
+            </div>
+          ) : (
+            <p className="text-[13px] text-faint">The split appears once prices load.</p>
+          )}
           {error ? <p className="text-[13px] text-danger">{error}</p> : null}
           <div className="flex flex-wrap gap-2">
             <Button disabled={Boolean(busy)} onClick={() => void start()}>{busy || "Create deposit address"}</Button>
@@ -121,13 +121,24 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
             {status.status === "confirming"
               ? `Confirming ${status.confirming[0]?.confirmations ?? 0}/${status.confirming[0]?.needed ?? 3}.`
               : null}
-            {status.status === "credited" ? `Credited ${formatZec(status.credited?.amount_zats ?? 0)} ZEC.` : null}
             {status.status === "expired" ? "This address expired. Start another deposit." : null}
+            {status.status === "credited" && credited ? "Credited." : null}
           </Notice>
+          {credited ? (
+            <div className="grid gap-1 text-[13px] leading-relaxed text-muted">
+              <p>Received {formatZec(credited.zec_zats)} ZEC at ${credited.zec_usd}.</p>
+              <p>Kept as ZEC: {formatZec(credited.zec.amount_zats)}.</p>
+              <p>
+                Converted: {formatZec(credited.usd.converted_zats)} → {formatUsd(credited.usd.value_micro_usd)}, fee {formatUsd(credited.usd.fee_micro_usd)}
+                {credited.usd.rebate_micro_usd > 0 ? `, network fee back ${formatUsd(credited.usd.rebate_micro_usd)}` : ""}.
+              </p>
+              <p>Dollar note: {formatUsd(credited.usd.amount_micro_usd)}.</p>
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-2">
-            <Button disabled={Boolean(busy) || !walletZec} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
+            <Button disabled={Boolean(busy) || !canPayHere || status.status === "credited"} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
           </div>
-          {uri ? <QRPay uri={uri} caption="Or send this amount from any wallet. No memo." /> : <CopyField label="Address" value={status.address} />}
+          {uri && status.status !== "credited" ? <QRPay uri={uri} caption="Or send this amount from any wallet. No memo." /> : <CopyField label="Address" value={status.address} />}
           {error ? <p className="text-[13px] text-danger">{error}</p> : null}
           {onDone && status.status === "credited" ? <Button onClick={onDone}>Continue</Button> : null}
         </>

@@ -14,9 +14,12 @@ const connectSrc = ["'self'", testnet, mainnet, onionTest, onionMain, lwdTest, l
 // Next's dev server needs eval for hot reload. Production builds use the
 // strict policy from the architecture note, including wasm-unsafe-eval for
 // the proof circuit and the Argon2 WASM.
+// Next's app router boots from inline scripts. A nonce would also work, but
+// this site is statically prerendered, so those script tags cannot carry a
+// per-request nonce. 'unsafe-inline' lets that boot sequence run.
 const scriptSrc =
   process.env.NODE_ENV === "production"
-    ? "script-src 'self' 'wasm-unsafe-eval'"
+    ? "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'"
     : "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'";
 
 const csp = [

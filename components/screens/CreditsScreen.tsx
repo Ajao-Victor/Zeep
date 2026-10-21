@@ -1,46 +1,132 @@
 "use client";
 
-import { useState } from "react";
-import { formatCredits, formatZec, parseZec } from "@/lib/zeep";
+import { useEffect, useState } from "react";
+import { formatCredits, formatZec, parseZec, zatsToMicroUsd, type WithdrawalPlan } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
+import type { FeeSheet } from "@/lib/zeep/prices";
+import { addressKind } from "@/lib/zcash/address";
+import { kvGet, kvSet, storeKey } from "@/lib/vault/db";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
+import { Reauth } from "@/components/flows/Reauth";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
 
-const MIN = 20_002n;
+type Watch = {
+  id: string;
+  status: string;
+  message?: string;
+  warning?: string;
+  zec_received_zats?: number | null;
+  tranches?: { tranche: number; status: string; txid: string | null; amount_zats: number }[];
+};
+
+const utcDay = () => Math.floor(Date.now() / 86_400_000);
 
 export function CreditsScreen() {
   const { view } = useVault();
   const [amount, setAmount] = useState("");
+  const [max, setMax] = useState(false);
   const [address, setAddress] = useState("");
+  const [allowTransparent, setAllowTransparent] = useState(false);
+  const [fees, setFees] = useState<FeeSheet | null>(null);
+  const [usedToday, setUsedToday] = useState(false);
+  const [plan, setPlan] = useState<WithdrawalPlan | null>(null);
+  const [stage, setStage] = useState<"form" | "confirm" | "reauth">("form");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [result, setResult] = useState("");
   const [funds, setFunds] = useState(false);
+  const [watch, setWatch] = useState<Watch | null>(null);
 
-  async function withdraw() {
+  useEffect(() => {
+    const session = readSession();
+    if (!session) return;
+    void session.client.fees().then((sheet) => setFees(sheet as FeeSheet)).catch(() => {});
+    void kvGet<number>(storeKey.feeDay(view.network)).then((day) => setUsedToday(day === utcDay()));
+  }, [view.network]);
+
+  useEffect(() => {
+    if (!watch || watch.status === "done" || watch.status === "failed") return;
+    const timer = window.setInterval(() => {
+      const session = readSession();
+      if (!session) return;
+      void session.client.withdrawalStatus(watch.id).then((next) => {
+        setWatch((current) => current && current.id === watch.id ? { ...current, ...next, id: watch.id } : current);
+      }).catch(() => {});
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [watch]);
+
+  const kind = addressKind(address, view.network);
+  const covered = Boolean(fees?.free_network_fees_available) && !usedToday;
+  const feePct = (fees?.withdrawal.fee_bps ?? 150) / 100;
+  const beside = (() => {
+    if (max) return "Everything you hold";
+    if (!view.prices) return "";
+    try {
+      const zats = parseZec(amount);
+      return `≈ ${formatCredits(zatsToMicroUsd(zats, view.prices.zec_usd), view.microPerCredit)} cr`;
+    } catch {
+      return "";
+    }
+  })();
+
+  function resetPlan() {
+    setPlan(null);
+    setStage("form");
+  }
+
+  async function review() {
     const session = readSession();
     if (!session) return;
     setError("");
     setFunds(false);
-    setResult("");
-    let zats: bigint;
+    setWatch(null);
+    if (kind === "invalid") {
+      setError(address.trim() ? "That address is not valid on this network." : "Paste a Zcash address.");
+      return;
+    }
+    if (kind === "transparent" && !allowTransparent) {
+      setError("A transparent address needs the confirmation below.");
+      return;
+    }
+    setBusy("Checking the withdrawal…");
     try {
-      zats = parseZec(amount);
-    } catch {
-      setError("Enter the amount in ZEC.");
-      return;
+      const next = await session.client.planWithdrawal(max ? "all" : parseZec(amount));
+      setPlan(next);
+      if (next.needsConversion) setStage("confirm");
+      else await send(next);
+    } catch (cause) {
+      setFunds(isFundsError(cause));
+      setError(cause instanceof Error ? cause.message : "The withdrawal could not be planned.");
+    } finally {
+      setBusy("");
     }
-    if (zats < MIN) {
-      setError(`The minimum is ${formatZec(MIN)} ZEC.`);
-      return;
-    }
+  }
+
+  async function send(chosen: WithdrawalPlan) {
+    const session = readSession();
+    if (!session) return;
     setBusy("Proving the withdrawal…");
+    setError("");
     try {
-      const outcome = await session.client.withdraw(zats, address.trim());
-      setResult(`Withdrawal ${outcome.id} pays out in two parts, about 10 and 20 minutes apart.`);
+      const outcome = await session.client.withdraw(chosen, address.trim(), { allowTransparent: kind === "transparent" });
+      if (outcome?.network_fees_paid_by === "zeep") {
+        await kvSet(storeKey.feeDay(view.network), utcDay());
+        setUsedToday(true);
+      }
+      const id = String(outcome.withdrawal_id ?? outcome.id ?? "");
+      setWatch({
+        id,
+        status: String(outcome.status ?? ""),
+        message: outcome.processing?.message ?? outcome.message,
+        warning: outcome.warning,
+        zec_received_zats: outcome.zec_received_zats ?? null,
+        tranches: outcome.tranches,
+      });
       setAmount("");
+      setMax(false);
+      resetPlan();
     } catch (cause) {
       setFunds(isFundsError(cause));
       setError(cause instanceof Error ? cause.message : "The withdrawal failed.");
@@ -51,20 +137,80 @@ export function CreditsScreen() {
 
   return (
     <Page narrow>
-      <PageIntro kicker="Balance" title={`${view.creditLabel} cr`} lede={`${view.zecLabel} ZEC. Credits are only how this number is shown.`} />
+      <PageIntro kicker="Balance" title={`${view.creditLabel} cr`} lede="Dollars plus ZEC at the live price. 1 credit is $1." />
       <Panel>
-        <p className="text-[14px] text-muted">Withdraw any amount of at least {formatZec(MIN)} ZEC ({formatCredits(MIN, view.zatsPerCredit)} cr) to a shielded address.</p>
-        <div className="mt-4 grid gap-3">
-          <TextField label="Amount in ZEC" value={amount} onChange={setAmount} placeholder="0.01" />
-          <TextField label="Shielded address" value={address} onChange={setAddress} />
+        <div className="grid gap-1 text-[14px] text-muted">
+          <p>Credits (dollars): {view.usdLabel}</p>
+          <p>ZEC: {view.zecHeldLabel} ZEC ≈ {view.zecValueLabel}</p>
+          <p>Total: {view.creditLabel} cr</p>
         </div>
+      </Panel>
+      <Panel>
+        <p className="text-[14px] text-muted">
+          Withdraw in ZEC. A converted part is at least $1, and the total must be worth at least $1.
+        </p>
+        <p className="mt-2 text-[13px] text-faint">
+          {covered
+            ? "Network fees: covered (first today)."
+            : fees
+              ? `Network fees: ${formatZec(fees.withdrawal.network_fee_zats)} ZEC.`
+              : "Network fees load with the price sheet."}
+        </p>
+        {stage === "form" ? (
+          <div className="mt-4 grid gap-3">
+            <div className="flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <TextField label="Amount in ZEC" value={max ? "Max" : amount} onChange={(value) => { setMax(false); setAmount(value); }} placeholder="0.01" />
+              </div>
+              <Button variant="secondary" onClick={() => { setMax(true); setAmount(""); }}>Max</Button>
+            </div>
+            {beside ? <p className="text-[13px] text-muted">{beside}</p> : null}
+            <TextField label="Zcash address" value={address} onChange={(value) => { setAddress(value); setAllowTransparent(false); }} />
+            {kind === "transparent" ? (
+              <label className="flex items-start gap-2 text-[13px] text-muted">
+                <input type="checkbox" className="mt-1" checked={allowTransparent} onChange={(event) => setAllowTransparent(event.target.checked)} />
+                <span>I understand the amount and recipient will be public.</span>
+              </label>
+            ) : null}
+          </div>
+        ) : null}
+        {stage !== "form" && plan ? (
+          <div className="mt-4 grid gap-3 text-[14px] leading-relaxed text-muted">
+            <p>
+              Your ZEC balance covers {formatZec(plan.zecZats)} ZEC. To withdraw the rest, {formatCredits(plan.usdMicro, view.microPerCredit)} credits will be converted back to ZEC (fee {formatCredits(plan.conversionFeeMicro, view.microPerCredit)} credits, {feePct}%). This takes 20–60 minutes; the ZEC arrives shielded and is sent automatically.
+            </p>
+            <p>≈ {formatZec(plan.estimatedZats)} ZEC. With a conversion, the final amount depends on the conversion rate.</p>
+            {stage === "reauth" ? (
+              <Reauth onSuccess={() => void send(plan)} onCancel={resetPlan} />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={Boolean(busy)} onClick={() => setStage("reauth")}>Convert and withdraw</Button>
+                <Button variant="secondary" onClick={resetPlan}>Cancel</Button>
+              </div>
+            )}
+          </div>
+        ) : null}
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-        {result ? <p className="mt-3 text-[13px] text-ok">{result}</p> : null}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button disabled={Boolean(busy) || !address.trim()} onClick={() => void withdraw()}>{busy || "Withdraw"}</Button>
-          <Button href="/deposit" variant="secondary">Deposit</Button>
-          {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
-        </div>
+        {watch ? (
+          <div className="mt-3 grid gap-1 text-[13px] text-muted">
+            {watch.message ? <p>{watch.status === "converting" ? "Processing… " : ""}{watch.message}</p> : <p>Status: {watch.status}.</p>}
+            {watch.zec_received_zats ? <p>ZEC received: {formatZec(watch.zec_received_zats)}.</p> : null}
+            {watch.warning ? <p className="text-warn">{watch.warning}</p> : null}
+            {(watch.tranches ?? []).map((tranche) => (
+              <p key={tranche.tranche}>
+                Tranche {tranche.tranche}: {tranche.status}
+                {tranche.txid ? ` ${tranche.txid}` : ""}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {stage === "form" ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button disabled={Boolean(busy) || (!max && !amount.trim()) || !address.trim()} onClick={() => void review()}>{busy || "Withdraw"}</Button>
+            <Button href="/deposit" variant="secondary">Deposit</Button>
+            {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
+          </div>
+        ) : null}
       </Panel>
     </Page>
   );

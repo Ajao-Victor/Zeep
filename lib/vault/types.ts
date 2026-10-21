@@ -25,7 +25,19 @@ export type Prefs = {
   network: Network;
 };
 
-export type NoteFile = { notes: import("@/lib/zeep").Note[]; nextDeposit: number };
+export type NoteFile = {
+  notes: import("@/lib/zeep").Note[];
+  nextDeposit: number;
+  refill?: { base: string; stage: number };
+};
+
+export type WalletHold = {
+  shieldedZats: bigint;
+  transparentZats: bigint;
+  unified: string;
+  transparentAddress: string;
+  shielding: boolean;
+};
 
 export type Session = {
   network: Network;
@@ -36,10 +48,10 @@ export type Session = {
   client: ZeepClient;
   record: VaultRecord;
   hasPasskey: boolean;
-  balanceZats: bigint;
+  usdMicro: bigint;
+  zecZats: bigint;
   prices: PriceSheet | null;
-  walletZats: bigint | null;
-  receiveAddress: string;
+  wallet: WalletHold | null;
 };
 
 export type { PriceSheet };

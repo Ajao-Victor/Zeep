@@ -34,11 +34,14 @@ export const tagsSchema = z.object({
 });
 
 export const reserveSchema = z.object({
-  issued: z.number(),
-  used: z.number(),
-  refunded: z.number(),
-  owed: z.string(),
-  coverage: z.string(),
+  owed_micro_usd: z.number(),
+  held_micro_usd: z.number(),
+  coverage_pct: z.number(),
+  totals: z.object({
+    usd_deposits_micro_usd: z.number(),
+    services_micro_usd: z.number(),
+    usd_withdrawals_micro_usd: z.number(),
+  }),
 });
 
 export const searchSchema = z.object({

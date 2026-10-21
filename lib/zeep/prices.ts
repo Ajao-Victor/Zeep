@@ -1,4 +1,4 @@
-export type PriceRoute = { usd?: number; zats: number };
+export type PriceRoute = { micro_usd: number; credits?: number };
 
 export type PriceModel = {
   id: string;
@@ -6,21 +6,28 @@ export type PriceModel = {
   host?: string;
   detail?: string;
   vision?: boolean;
-  usd?: number;
-  zats: number;
+  micro_usd: number;
+  credits?: number;
 };
 
 export type PriceSheet = {
-  zats_per_credit: number;
-  refresh_sec: number;
+  micro_usd_per_credit: number;
+  zec_usd: number;
+  refresh_sec?: number;
   routes: Record<string, PriceRoute>;
   models: PriceModel[];
-  attachments: { free_kb: number; zats_per_mb: number; max_body_mb: number; usd_per_mb?: number };
+  attachments: { free_kb: number; micro_usd_per_mb: number; max_body_mb: number };
   default_model?: string;
 };
 
-/** model.zats plus one attachment unit per MiB past the free 64 KB. */
-export function chatCostZats(modelZats: number, bodyBytes: number, zatsPerMb: number): bigint {
+export type FeeSheet = {
+  free_network_fees_available: boolean;
+  deposit: { zec_share_bps: number; fee_bps: number };
+  withdrawal: { fee_bps: number; network_fee_zats: number; network_fees_micro_usd: number; min_micro_usd: number };
+};
+
+/** model.micro_usd plus one attachment unit per MiB past the free 64 KB. */
+export function chatCostMicro(modelMicro: number, bodyBytes: number, microPerMb: number): bigint {
   const extra = Math.ceil(Math.max(0, bodyBytes - 65536) / (1024 * 1024));
-  return BigInt(modelZats) + BigInt(extra) * BigInt(zatsPerMb);
+  return BigInt(modelMicro) + BigInt(extra) * BigInt(microPerMb);
 }

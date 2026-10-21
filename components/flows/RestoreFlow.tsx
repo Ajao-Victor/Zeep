@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/lib/config";
 import { errorText } from "@/lib/format";
-import { formatZec } from "@/lib/zeep";
+import { formatUsd, formatZec } from "@/lib/zeep";
 import { wordCount } from "@/lib/vault/phrase";
 import { restoreVault } from "@/lib/vault/vault";
 import { Button } from "@/components/Button";
@@ -40,7 +40,7 @@ export function RestoreFlow() {
       setPin("");
       setAgain("");
       setWords(Array.from({ length: count }, () => ""));
-      setResult(`Restored. The private balance is ${formatZec(outcome)} ZEC.`);
+      setResult(`Restored. ${formatUsd(outcome.usd)} in dollars and ${formatZec(outcome.zec)} ZEC.`);
     } catch (cause) {
       setError(errorText(cause));
     } finally {

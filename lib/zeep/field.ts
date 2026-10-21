@@ -28,3 +28,5 @@ export const requestSignal = (method: string, path: string, rawBody: string | Ui
   hashToField("zeep-req-v1", method.toUpperCase(), path, sha256Hex(rawBody));
 export const withdrawSignal = (id: string, address: string) => hashToField("zeep-withdraw-v1", id.toLowerCase(), address);
 export const notesSignal = () => hashToField("zeep-notes-v1");
+export const depositSignal = (intentId: string, d: bigint) => hashToField("zeep-deposit-v1", intentId, d.toString());
+export const convertSignal = (id: string, mintD: bigint) => hashToField("zeep-convert-v1", id.toLowerCase(), mintD.toString());

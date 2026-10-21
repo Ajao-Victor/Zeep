@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(config.appUrl),
   title: { default: config.appName, template: `%s · ${config.appName}` },
   description:
-    "Deposit shielded ZEC and use private AI, search, health lookups, blockchain access and an anonymous inbox. Every request is paid in zatoshis with one zero-knowledge proof.",
+    "Deposit ZEC. Half stays ZEC and half becomes dollars. Private AI, search, health lookups, blockchain access and an anonymous inbox are paid from that dollar balance, one zero-knowledge proof per request.",
   referrer: "no-referrer",
 };
 

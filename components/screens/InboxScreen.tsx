@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { apiBase } from "@/lib/config";
-import { isFundsError, payJson } from "@/lib/zeep/pay";
+import { isFundsError, readPaid } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { setInbox } from "@/lib/vault/vault";
 import { Button } from "@/components/Button";
@@ -18,7 +18,7 @@ export function InboxScreen() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
-  const price = view.prices?.routes.inbox.zats;
+  const price = view.prices?.routes.inbox.micro_usd;
 
   async function create() {
     const session = readSession();
@@ -27,13 +27,8 @@ export function InboxScreen() {
     setError("");
     setFunds(false);
     try {
-      const body = await payJson<{ inbox_id: string; address: string }>(
-        session.client,
-        "POST",
-        "/v1/inbox",
-        {},
-        BigInt(price),
-      );
+      const response = await session.client.pay("POST", "/v1/inbox", "", BigInt(price));
+      const body = await readPaid<{ inbox_id: string; address: string }>(response);
       await setInbox(body.inbox_id, body.address);
     } catch (cause) {
       setFunds(isFundsError(cause));
@@ -61,7 +56,7 @@ export function InboxScreen() {
 
   return (
     <Page>
-      <PageIntro kicker="Inbox" title="A shielded address for incoming ZEC." lede="Opening it takes one proof. Reading messages is free." />
+      <PageIntro kicker="Inbox" title="An address with no name on it." lede="Opening it takes one proof. Reading messages is free." />
       <Panel>
         {view.inboxAddress ? (
           <>
