@@ -36,7 +36,6 @@ export function Composer({
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const model = prices?.models.find((item) => item.id === modelId) ?? prices?.models[0];
-  const vision = Boolean(model?.vision);
   const perMb = prices ? formatCredits(prices.attachments.micro_usd_per_mb, prices.micro_usd_per_credit) : "…";
 
   function grow() {
@@ -76,7 +75,8 @@ export function Composer({
       {attachments.length ? (
         <ul className="mb-2 flex flex-wrap gap-2">
           {attachments.map((item) => (
-            <li key={item.id} className="flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
+            <li key={item.id} className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1 text-[12px] text-muted">
+              {item.previewUrl ? <img src={item.previewUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : null}
               <span className="max-w-[10rem] truncate">{item.name}</span>
               <span className="font-mono">{Math.max(1, Math.round(item.size / 1024))} KB</span>
               <button type="button" onClick={() => onRemove(item.id)} className="text-faint hover:text-text" aria-label={`Remove ${item.name}`}>
@@ -116,7 +116,7 @@ export function Composer({
           type="file"
           multiple
           className="hidden"
-          accept={vision ? "image/png,image/jpeg,image/webp,image/gif,application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py" : "application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py"}
+          accept="image/*,application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py"
           onChange={(event) => {
             if (event.target.files) onAttach(event.target.files);
             event.target.value = "";
@@ -173,9 +173,8 @@ function ModelRow({ item, perCredit, zecUsd, onPick }: { item: PriceModel; perCr
   );
 }
 
-export function rejectKind(file: File, vision: boolean): string | null {
+export function rejectKind(file: File): string | null {
   const kind = fileKind(file);
   if (!kind) return `${file.name} is not an image, a text file, or a PDF.`;
-  if (kind === "image" && !vision) return "This model does not read images.";
   return null;
 }

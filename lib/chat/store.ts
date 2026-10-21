@@ -49,6 +49,9 @@ export async function loadChats(network: Network, vaultKey: Uint8Array, autodele
       const chat = await open(vaultKey, blob);
       if (autodelete && chat.updatedAt < cutoff) {
         await kvDel(storeKey.chat(network, id));
+        const { deleteDeviceFiles } = await import("@/lib/chat/blobs");
+        const { fileIdsIn } = await import("@/lib/chat/types");
+        await deleteDeviceFiles(network, fileIdsIn(chat));
         continue;
       }
       chats.push(chat);
@@ -60,6 +63,15 @@ export async function loadChats(network: Network, vaultKey: Uint8Array, autodele
   if (keep.length !== ids.length) await kvSet(storeKey.chatIds(network), keep);
   chats.sort((a, b) => b.updatedAt - a.updatedAt);
   return chats;
+}
+
+export async function deleteChat(network: Network, chat: Chat): Promise<void> {
+  const { deleteDeviceFiles } = await import("@/lib/chat/blobs");
+  const { fileIdsIn } = await import("@/lib/chat/types");
+  await deleteDeviceFiles(network, fileIdsIn(chat));
+  await kvDel(storeKey.chat(network, chat.id));
+  const ids = (await kvGet<string[]>(storeKey.chatIds(network))) ?? [];
+  await kvSet(storeKey.chatIds(network), ids.filter((id) => id !== chat.id));
 }
 
 export async function saveChat(network: Network, vaultKey: Uint8Array, chat: Chat): Promise<string> {
@@ -74,6 +86,8 @@ export async function deleteLocalChats(network: Network): Promise<void> {
   const ids = (await kvGet<string[]>(storeKey.chatIds(network))) ?? [];
   await Promise.all(ids.map((id) => kvDel(storeKey.chat(network, id))));
   await kvSet(storeKey.chatIds(network), []);
+  const { deleteAllDeviceFiles } = await import("@/lib/chat/blobs");
+  await deleteAllDeviceFiles(network);
 }
 
 export { open as openChatBlob, seal as sealChat };

@@ -19,6 +19,7 @@ type WalletRequest = {
   to?: string;
   zats?: string;
   minZats?: string;
+  birthday?: number;
 };
 
 type WalletModule = {
@@ -87,14 +88,14 @@ async function loadModule(): Promise<WalletModule> {
 }
 
 async function open(message: WalletRequest): Promise<WebWallet> {
-  const key = `${message.network}:${message.url}`;
+  const key = `${message.network}:${message.url}:${message.birthday ?? 0}`;
   if (wallet && opened === key) return wallet;
   if (!message.url) throw new Error("No lightwalletd URL is configured for this network.");
   const mod = await loadModule();
   await mod.initThreadPool(Math.min(4, navigator.hardwareConcurrency || 1));
   const chain = message.network === "mainnet" ? "main" : "test";
   const next = new mod.WebWallet(chain, message.url, 1, 1);
-  await next.create_account("zeep", message.phrase, 0, 0);
+  await next.create_account("zeep", message.phrase, 0, message.birthday ?? 0);
   await next.sync();
   wallet = next;
   opened = key;
@@ -113,7 +114,9 @@ async function shield(current: WebWallet, phrase: string): Promise<void> {
 
 async function snapshot(current: WebWallet, phrase: string, min: bigint) {
   await current.sync();
-  let pools = readPools(await current.get_wallet_summary());
+  const summary = await current.get_wallet_summary();
+  const height = chainHeight(summary);
+  let pools = readPools(summary);
   let shielding = false;
   if (pools.transparent >= min && current.pczt_shield) {
     shielding = true;
@@ -136,7 +139,15 @@ async function snapshot(current: WebWallet, phrase: string, min: bigint) {
     unified,
     transparentAddress,
     shielding,
+    height,
   };
+}
+
+function chainHeight(summary: unknown): number {
+  const root = (summary ?? {}) as Record<string, unknown>;
+  const raw = root.chain_tip_height ?? root.fully_scanned_height ?? root.chainTipHeight;
+  const height = Number(raw);
+  return Number.isFinite(height) ? height : 0;
 }
 
 self.onmessage = async (event: MessageEvent<WalletRequest>) => {

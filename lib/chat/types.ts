@@ -1,10 +1,12 @@
 export type TextPart = { type: "text"; text: string };
 export type ImagePart = { type: "image_url"; image_url: { url: string } };
-export type ContentPart = TextPart | ImagePart;
+export type FileRef = { type: "file"; id: string; name: string; mime: string; size: number };
+export type ContentPart = TextPart | ImagePart | FileRef;
 
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string | ContentPart[];
+  model?: string;
 };
 
 export type Chat = {
@@ -25,9 +27,12 @@ export type Attachment = {
   id: string;
   name: string;
   size: number;
+  mime: string;
   kind: "image" | "text" | "pdf";
   text?: string;
-  dataUrl?: string;
+  bytes?: Uint8Array;
+  thumb?: Uint8Array;
+  previewUrl?: string;
 };
 
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -35,9 +40,20 @@ export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export function messageText(message: ChatMessage): string {
   if (typeof message.content === "string") return message.content;
   return message.content
-    .filter((part): part is TextPart => part.type === "text")
-    .map((part) => part.text)
+    .map((part) => (part.type === "text" ? part.text : part.type === "file" ? part.name : ""))
+    .filter(Boolean)
     .join("\n");
+}
+
+export function fileIdsIn(chat: { messages: ChatMessage[] }): string[] {
+  const ids: string[] = [];
+  for (const message of chat.messages) {
+    if (!Array.isArray(message.content)) continue;
+    for (const part of message.content) {
+      if (part.type === "file") ids.push(part.id);
+    }
+  }
+  return ids;
 }
 
 export function titleFrom(message: ChatMessage): string {

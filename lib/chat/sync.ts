@@ -56,6 +56,18 @@ export async function pullChats(network: Network, keys: ZeepKeys, autodelete: bo
   return [...byId.values()].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+export async function deleteRemoteChat(network: Network, keys: ZeepKeys, id: string): Promise<void> {
+  const response = await fetch(`${apiBase(network)}/v1/vault/${keys.vaultId}/items/chat-${id}`, {
+    method: "DELETE",
+    headers: { "x-vault-auth": keys.vaultAuth },
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+  });
+  if (!response.ok && response.status !== 404 && response.status !== 204) {
+    throw new Error(`The synced chat was not removed (${response.status}).`);
+  }
+}
+
 export async function deleteRemoteVault(network: Network, keys: ZeepKeys): Promise<void> {
   await deleteLocalChats(network);
   const response = await fetch(`${apiBase(network)}/v1/vault/${keys.vaultId}`, {

@@ -16,7 +16,7 @@ import { useVault } from "@/components/Providers";
 import { cx } from "@/lib/cx";
 
 const STEPS = ["Phrase", "PIN", "Deposit"] as const;
-type Step = (typeof STEPS)[number];
+type Step = (typeof STEPS)[number] | "Welcome";
 
 export function phraseWords(phrase: string): string[] {
   return phrase.trim().split(/\s+/);
@@ -25,7 +25,7 @@ export function phraseWords(phrase: string): string[] {
 export function GetFlow() {
   const { view } = useVault();
   const router = useRouter();
-  const [step, setStep] = useState<Step>("Phrase");
+  const [step, setStep] = useState<Step>("Welcome");
   const [pin, setPin] = useState("");
   const [again, setAgain] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -38,8 +38,8 @@ export function GetFlow() {
   const words = phrase ? phraseWords(phrase) : [];
 
   useEffect(() => {
-    if (!phrase) setPhrase(createPhrase());
-  }, [phrase]);
+    if (step === "Phrase" && !phrase) setPhrase(createPhrase());
+  }, [phrase, step]);
 
   if (!view.ready) return <Page narrow><p className="text-muted">Checking this device…</p></Page>;
   if (view.status === "unlocked" && step !== "Deposit") {
@@ -117,7 +117,16 @@ export function GetFlow() {
           <Notice tone="danger">The vault on this device was erased. You can restore the 24 words, or create a new balance.</Notice>
         </div>
       ) : null}
-      <PageIntro kicker={view.network === "testnet" ? "Testnet balance" : "Mainnet balance"} title="Open a balance" lede="One 24-word phrase holds the Zcash wallet and the private Zeep balance. It never leaves this device unencrypted." />
+      <PageIntro kicker={view.network === "testnet" ? "Testnet balance" : "Mainnet balance"} title={step === "Welcome" ? "Zeep" : "Open a balance"} lede={step === "Welcome" ? "Create a new account, or sign in with the 24 words from an account you already have." : "One 24-word phrase holds the Zcash wallet and the private Zeep balance. It never leaves this device unencrypted."} />
+      {step === "Welcome" ? (
+        <Panel>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => { setPhrase(createPhrase()); setStep("Phrase"); }}>Create a new account</Button>
+            <Button href="/restore" variant="secondary">Sign in with 24 words</Button>
+          </div>
+        </Panel>
+      ) : (
+      <>
       <ol className="mb-6 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-faint">
         {STEPS.map((item) => (
           <li key={item} className={cx("font-mono", item === step && "text-gold")}>{item}</li>
@@ -152,7 +161,9 @@ export function GetFlow() {
             ) : (
               <Button onClick={() => { setQuizzing(true); setError(""); setAnswers(indexes.map(() => "")); }}>I wrote these down</Button>
             )}
-            {quizzing ? <Button variant="secondary" onClick={() => setQuizzing(false)}>Back</Button> : null}
+            {quizzing ? <Button variant="secondary" onClick={() => setQuizzing(false)}>Back</Button> : (
+              <Button variant="secondary" onClick={() => { setPhrase(""); setStep("Welcome"); }}>Back</Button>
+            )}
           </div>
         </Panel>
       ) : null}
@@ -193,6 +204,8 @@ export function GetFlow() {
           </div>
         </Panel>
       ) : null}
+      </>
+      )}
     </Page>
   );
 }

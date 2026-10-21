@@ -6,6 +6,7 @@ import type { DepositStatus } from "@/lib/zeep/client";
 import { zip321 } from "@/lib/zcash/zip321";
 import { payFromWallet, walletSummary } from "@/lib/zcash/wallet";
 import { readSession } from "@/lib/vault/session";
+import { writePending } from "@/lib/account/pending";
 import { Button } from "@/components/Button";
 import { CopyField } from "@/components/CopyField";
 import { Notice, TextField } from "@/components/Panel";
@@ -71,6 +72,13 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
       void session.client.depositStatus(status.slot).then((next) => setStatus({ ...next, slot: status.slot })).catch(() => {});
     }, 4000);
     return () => window.clearInterval(timer);
+  }, [status]);
+
+  useEffect(() => {
+    const session = readSession();
+    if (!session || !status) return;
+    const active = status.status === "waiting" || status.status === "confirming";
+    void writePending(session.network, { deposit: active });
   }, [status]);
 
   async function payHere() {

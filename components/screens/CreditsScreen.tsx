@@ -7,6 +7,7 @@ import type { FeeSheet } from "@/lib/zeep/prices";
 import { addressKind } from "@/lib/zcash/address";
 import { kvGet, kvSet, storeKey } from "@/lib/vault/db";
 import { readSession } from "@/lib/vault/session";
+import { writePending } from "@/lib/account/pending";
 import { Button } from "@/components/Button";
 import { Reauth } from "@/components/flows/Reauth";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
@@ -55,6 +56,13 @@ export function CreditsScreen() {
       }).catch(() => {});
     }, 30_000);
     return () => window.clearInterval(timer);
+  }, [watch]);
+
+  useEffect(() => {
+    const session = readSession();
+    if (!session) return;
+    const active = watch?.status === "converting" || watch?.status === "paying";
+    void writePending(session.network, { withdrawal: active });
   }, [watch]);
 
   const kind = addressKind(address, view.network);

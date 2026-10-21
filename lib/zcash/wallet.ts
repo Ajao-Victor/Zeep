@@ -6,6 +6,7 @@ export type WalletSummary = {
   unified: string;
   transparentAddress: string;
   shielding: boolean;
+  height: number;
 };
 
 type Reply =
@@ -17,6 +18,7 @@ type Reply =
       unified?: string;
       transparentAddress?: string;
       shielding?: boolean;
+      height?: number;
     }
   | { id: string; ok: false; error: string };
 
@@ -43,13 +45,14 @@ function call(body: Record<string, unknown>): Promise<Reply> {
   });
 }
 
-export async function walletSummary(phrase: string, network: Network): Promise<WalletSummary> {
+export async function walletSummary(phrase: string, network: Network, birthday = 0): Promise<WalletSummary> {
   const result = await call({
     type: "summary",
     phrase,
     network,
     url: config.lightwalletd[network],
     minZats: String(config.autoshieldMinZats),
+    birthday,
   });
   if (!result.ok || !result.unified) throw new Error(result.ok ? "The wallet returned no address." : result.error);
   return {
@@ -58,6 +61,7 @@ export async function walletSummary(phrase: string, network: Network): Promise<W
     unified: result.unified,
     transparentAddress: result.transparentAddress ?? "",
     shielding: Boolean(result.shielding),
+    height: result.height ?? 0,
   };
 }
 

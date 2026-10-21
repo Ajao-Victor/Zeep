@@ -8,6 +8,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { config } from "@/lib/config";
 import { cx } from "@/lib/cx";
 import { NetworkToggle } from "@/components/NetworkToggle";
+import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { useVault } from "@/components/VaultState";
 
 const PUBLIC = [
@@ -38,6 +39,7 @@ export function SiteHeader() {
   const inApp = APP.some(([href]) => pathname === href);
   const activeRef = useRef<HTMLAnchorElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -183,6 +185,9 @@ export function SiteHeader() {
             <button type="button" onClick={() => void lock()} className="shrink-0 text-[14px] text-muted hover:text-text">
               Lock
             </button>
+            <button type="button" onClick={() => setSignOutOpen(true)} className="shrink-0 text-[14px] text-muted hover:text-text">
+              Sign out
+            </button>
           </div>
         ) : (
           <Link href="/get" className="shrink-0 whitespace-nowrap rounded-lg bg-gold px-3 py-2 text-[13px] font-medium leading-none text-on-gold transition-colors duration-150 hover:bg-gold-hover sm:px-3.5 sm:text-[14px]">
@@ -207,6 +212,7 @@ export function SiteHeader() {
           </nav>
         </div>
       ) : null}
+      <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
     </header>
   );
 }

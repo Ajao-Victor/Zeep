@@ -42,4 +42,15 @@ export const storeKey = {
   chatIds: (network: Network) => `chat-ids:${network}`,
   chat: (network: Network, id: string) => `chat:${network}:${id}`,
   feeDay: (network: Network) => `fee-day:${network}`,
+  pending: (network: Network) => `pending:${network}`,
+  walletMeta: (network: Network) => `wallet-meta:${network}`,
+  fileIds: (network: Network) => `file-ids:${network}`,
+  file: (network: Network, id: string) => `file:${network}:${id}`,
+  fileBytes: (network: Network, id: string) => `file-bytes:${network}:${id}`,
+  thumb: (network: Network, id: string) => `thumb:${network}:${id}`,
 };
+
+export async function kvKeys(): Promise<string[]> {
+  const keys = await (await db()).getAllKeys("kv");
+  return keys.map(String);
+}

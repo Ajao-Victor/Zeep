@@ -2,7 +2,8 @@ import { config, apiBase, type Network } from "@/lib/config";
 import { fromHex, hex, randomBytes, zero } from "@/lib/bytes";
 import { deriveKeys, NoteBook, seedFromPhrase, USD, ZEC, ZeepClient } from "@/lib/zeep";
 import { workerProve, stopProver } from "@/lib/zeep/prove";
-import { kvDel, kvGet, kvSet, storeKey } from "@/lib/vault/db";
+import { kvDel, kvGet, kvKeys, kvSet, storeKey } from "@/lib/vault/db";
+import { closeWallet } from "@/lib/zcash/wallet";
 import { decryptBytes, decryptJson, encryptBytes, encryptJson, importAes } from "@/lib/vault/crypto";
 import { derivePinKey } from "@/lib/vault/kdf";
 import { phraseValid } from "@/lib/vault/phrase";
@@ -101,6 +102,7 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
     wallet: null,
   });
   await kvSet(storeKey.meta(network), { ...meta, failedAttempts: 0, wipedAt: undefined });
+  void navigator.storage?.persist?.().catch(() => undefined);
   void client.refreshSpent().catch(() => {});
   void client.prices().then((prices) => {
     const current = readSession();
@@ -242,18 +244,82 @@ export async function createVault(input: { network: Network; pin: string; phrase
   const existing = await kvGet(storeKey.vault(input.network));
   if (existing) throw new Error("This network already has a pass on this device.");
   await mint(input);
+  const session = readSession();
+  if (!session) return;
+  void import("@/lib/zcash/wallet")
+    .then(({ walletSummary }) => walletSummary(session.phrase, session.network, 0))
+    .then(async (summary) => {
+      if (summary.height <= 0 || readSession()?.network !== session.network) return;
+      const { rememberBirthday } = await import("@/lib/zcash/birthday");
+      await rememberBirthday(session.network, session.keys, summary.height);
+    })
+    .catch(() => undefined);
 }
 
-export async function restoreVault(input: { network: Network; pin: string; phrase: string; prf?: Uint8Array; credentialId?: string }) {
+export async function restoreVault(
+  input: { network: Network; pin: string; phrase: string; prf?: Uint8Array; credentialId?: string },
+  onProgress?: (msg: string) => void,
+) {
   await mint(input);
   const session = readSession();
   if (!session) throw new Error("The vault did not open.");
-  await session.client.restore();
+  onProgress?.("Finding your notes");
+  await session.client.restore(onProgress);
   const balances = session.client.balances();
   session.usdMicro = balances.usd;
   session.zecZats = balances.zec;
   emit();
+  const { readWalletBirthday, saplingBirthday } = await import("@/lib/zcash/birthday");
+  const saved = await readWalletBirthday(session.network, session.keys);
+  const birthday = saved ?? saplingBirthday(session.network);
+  if (saved == null) onProgress?.("Restoring your wallet can take a few minutes");
+  else onProgress?.("Restoring the wallet");
+  try {
+    const { walletSummary } = await import("@/lib/zcash/wallet");
+    const summary = await walletSummary(session.phrase, session.network, birthday);
+    const { rememberBirthday } = await import("@/lib/zcash/birthday");
+    if (summary.height > 0) await rememberBirthday(session.network, session.keys, summary.height);
+  } catch {
+    onProgress?.("The in-app wallet will finish when its lightwalletd URL is set");
+  }
+  const { readChatPrefs } = await import("@/lib/chat/store");
+  const { pullChats } = await import("@/lib/chat/sync");
+  const prefs = await readChatPrefs(session.network);
+  if (prefs.sync) {
+    onProgress?.("Restoring chats");
+    await pullChats(session.network, session.keys, prefs.autodelete).catch(() => undefined);
+  }
   return balances;
+}
+
+export async function signOut(network: Network) {
+  stopProver();
+  closeWallet();
+  const keys = await kvKeys();
+  await Promise.all(
+    keys.filter((key) => key.includes(`:${network}`)).map((key) => kvDel(key)),
+  );
+  await kvDel(storeKey.vault(network));
+  await kvDel(storeKey.meta(network));
+  await kvDel(storeKey.notes(network));
+  if (typeof indexedDB.databases === "function") {
+    const databases = await indexedDB.databases();
+    await Promise.all(
+      databases
+        .filter((item) => item.name && item.name !== "zeep" && /webzjs|zcash|wallet/i.test(item.name))
+        .map(
+          (item) =>
+            new Promise<void>((resolve) => {
+              const request = indexedDB.deleteDatabase(item.name as string);
+              request.onsuccess = () => resolve();
+              request.onerror = () => resolve();
+              request.onblocked = () => resolve();
+            }),
+        ),
+    );
+  }
+  if (readSession()?.network === network) clearSession();
+  else emit();
 }
 
 export async function lockVault() {

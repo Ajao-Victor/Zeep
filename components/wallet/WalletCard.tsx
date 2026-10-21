@@ -19,7 +19,11 @@ export function WalletCard() {
     let stop = false;
     void walletSummary(session.phrase, view.network)
       .then((summary) => {
-        if (!stop) setWallet(summary);
+        if (stop) return;
+        setWallet(summary);
+        if (summary.height > 0) {
+          void import("@/lib/zcash/birthday").then(({ rememberBirthday }) => rememberBirthday(session.network, session.keys, summary.height));
+        }
       })
       .catch((cause) => {
         if (!stop) setNote(cause instanceof Error ? cause.message : "The in-app wallet is unavailable.");
