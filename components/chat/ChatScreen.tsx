@@ -302,7 +302,7 @@ export function ChatScreen() {
       </aside>
       <aside className="hidden w-[272px] shrink-0 border-r border-line bg-surface lg:block">{sidebar}</aside>
       {historyOpen ? (
-        <div className="absolute inset-y-0 left-12 z-20 hidden w-[272px] border-r border-line bg-surface shadow-none sm:block lg:hidden">{sidebar}</div>
+        <aside className="hidden w-[272px] shrink-0 border-r border-line bg-surface sm:block lg:hidden">{sidebar}</aside>
       ) : null}
       <section className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-line px-3 py-2 sm:hidden">
