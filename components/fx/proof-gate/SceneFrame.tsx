@@ -11,6 +11,14 @@ import { Poster } from "@/components/fx/proof-gate/Poster";
 // The WebGL scene (three.js + R3F) is its own chunk, fetched only when a device earns tier 2 or 3.
 const Scene3D = dynamic(() => import("@/components/fx/proof-gate/Scene3D"), { ssr: false });
 
+// Fade the scene in from the left and top edges, so nothing ends in a hard line at the box.
+const EDGE_FADE = {
+  maskImage: "linear-gradient(to right, transparent, #000 14%), linear-gradient(to bottom, transparent, #000 12%)",
+  maskComposite: "intersect",
+  WebkitMaskImage: "linear-gradient(to right, transparent, #000 14%), linear-gradient(to bottom, transparent, #000 12%)",
+  WebkitMaskComposite: "source-in",
+} as const;
+
 function whenIdle(run: () => void): () => void {
   if (typeof window.requestIdleCallback === "function") {
     const id = window.requestIdleCallback(run, { timeout: 1500 });
@@ -78,21 +86,23 @@ export function SceneFrame({
     <div ref={boxRef} className="absolute inset-0 overflow-hidden" data-tier={tier ?? "pending"}>
       {layout ? (
         <>
-          {tier === 0 || (webgl && !ready) ? (
-            <div className="absolute inset-0">
-              <Poster layout={layout} />
-            </div>
-          ) : null}
-          {tier === 1 ? (
-            <div className="absolute inset-0">
-              <LiteScene layout={layout} active={active} source={source} onCross={onCrossOne} />
-            </div>
-          ) : null}
-          {webgl && load3d ? (
-            <div className="absolute inset-0">
-              <Scene3D layout={layout} tier={tier} active={active} source={source} onCross={onCross} onFps={onFps} onLost={onLost} onReady={onReady} />
-            </div>
-          ) : null}
+          <div className="absolute inset-0" style={EDGE_FADE}>
+            {tier === 0 || (webgl && !ready) ? (
+              <div className="absolute inset-0">
+                <Poster layout={layout} />
+              </div>
+            ) : null}
+            {tier === 1 ? (
+              <div className="absolute inset-0">
+                <LiteScene layout={layout} active={active} source={source} onCross={onCrossOne} />
+              </div>
+            ) : null}
+            {webgl && load3d ? (
+              <div className="absolute inset-0">
+                <Scene3D layout={layout} tier={tier} active={active} source={source} onCross={onCross} onFps={onFps} onLost={onLost} onReady={onReady} />
+              </div>
+            ) : null}
+          </div>
           <ul className="pointer-events-none absolute inset-0 font-mono text-[11px] text-muted" aria-hidden="true">
             {LANES.map((lane, index) => (
               <li
