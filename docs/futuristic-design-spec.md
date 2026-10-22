@@ -280,3 +280,41 @@ The same engine with two chambers separated by a glowing membrane. "What Zeep re
 - **Never use drei `<Environment preset="…">`.** The presets download HDRIs from a CDN. Use `RoomEnvironment` or self-hosted files.
 - **Avoid 3D text.** If it is ever needed, drei `<Text>` must be given a self-hosted font file, because troika's default font comes from a CDN.
 - **Budget:** at most 600 KB of scene assets at T2, textures at most 1024 px, and posters at most 120 KB AVIF each.
+
+## 6. Component primitives
+
+Every screen is rebuilt from a small set of primitives. Each row maps a new primitive to the component it replaces or extends, so the migration path is explicit.
+
+| Primitive | Replaces / extends | What changes |
+| --- | --- | --- |
+| `Surface` | `Panel` (`components/Panel.tsx`) | Variants `solid`, `glass-1`, `glass-2`, `hero`. Props for elevation and the lit edge. `Panel` becomes a thin alias during the migration |
+| `Button` | `components/Button.tsx` | Variants `primary` (gold with `--elev-gold` and the hover sheen), `secondary` (glass), `ghost`, `danger`. New `busy` and `phase` props for the Forge. Keeps the `href` → `Link` behaviour |
+| `ProofButton` (the Forge) | Every "Proving…" button: chat Send, Search, Look up, Call, Open an inbox, Transfer, Withdraw | Shows the live proof phase (below). Width stays fixed so the layout never jumps |
+| `Counter` | Plain balance strings (`view.creditLabel` and others) | Per-digit odometer, tabular mono, settles within 600 ms, `aria-live="polite"` announces only the final value |
+| `BalanceCore` | The balance blocks on `/services` and `/credits` | A two-part orb: a solid gold core for dollars and a translucent shell for ZEC, sized by their share of the total. Hover or tap shows the existing tooltip split |
+| `StatusRail` | The deposit `Notice` and the withdrawal status lines | Deposit: waiting → confirming 1/3, 2/3, 3/3 → credited. Withdrawal: converting → scheduled → paying → done, with a node per tranche and its txid |
+| `Receipt` | Nothing today (`ProofTag.tsx` is unused) | A local-only proof receipt after each paid request: route, cost in credits and the short tag. Revives `ProofTag`. Never sent anywhere |
+| `Field` | `TextField` | Floating label, gold focus line, a `mono` variant for amounts and addresses, and an inline address badge (shielded, transparent, invalid) driven by `addressKind()` as the user types |
+| `Segmented` | `NetworkToggle`, the Drug/Trial pills, the chain chips | A sliding gold pill with `spring.snappy`. Keeps `aria-pressed` |
+| `Dialog` | `Modal`, `SignOutDialog`, chat `SettingsDialog` | One glass-2 dialog. Scales from its trigger, backdrop blur, Radix behaviour unchanged |
+| `Drawer` | The mobile menu in `SiteHeader`, the chat history drawer | Slides with `spring.weighty`, the page behind recedes (scale 0.98, dim) |
+| `Toast` | `components/Toast.tsx` | Glass, rise-and-unblur entry, a tone icon. Same API (`useToast()(text, tone)`) |
+| `TiltCard` | `ServiceCard` and the landing step cards (`.step-card`) | CSS 3D tilt with a specular highlight. The `scale(1.02)` hover stays for touch devices |
+| `PhraseGrid` | `components/PhraseGrid.tsx` | Words stay blurred until the user presses and holds "Reveal" (shoulder-surfing protection), then appear in sequence with an opacity-only fade. See section 8 |
+| `PinPad` | `components/PinPad.tsx` | Glass keys, uniform press feedback, dots that fill with `spring.snappy`, an optional short vibration on Android. See section 8 |
+| `SceneFrame` | The wrapper in `ProofFlowCanvas` | Picks the tier, shows the poster, lazy-loads the scene, pauses off-screen and carries the accessible description |
+| `SiteHeader` | `components/SiteHeader.tsx` | Glass that condenses from 64 to 52 px on scroll. Balance becomes a `Counter`. The network switch plays the Vault Door transition |
+
+### The Forge: proof phases
+
+`client.pay` is a single promise, and `lib/zeep` is a copy of the backend SDK that should stay unmodified. The phases therefore come from the edges the app already owns, with no SDK change:
+
+| Phase | Signal | Visual |
+| --- | --- | --- |
+| `preparing` | The button's handler has called `client.pay` (or `payJson`) and the prover has not started | Inputs (coloured motes) gather at the button's left edge |
+| `proving` | `workerProve` in `lib/zeep/prove.ts` posts a `prove` message (emit "start") | The motes converge into a spinning gold lattice. Label: "Proving…" (today's copy) |
+| `sending` | `workerProve` resolves (emit "end") and the request is in flight | The lattice collapses into one white mote that leaves to the right |
+| `settled` | The `pay` promise resolves with an OK response | A check draws itself. The header `Counter` rolls down. A `Receipt` appears |
+| `failed` | The promise rejects, or `isFundsError` | A short shake and the existing error text. A funds error shows "Add funds", as today |
+
+A small event emitter in `lib/zeep/prove.ts` (the app's own file, not part of the copied SDK) publishes "start" and "end". Merges and staged refills also prove, so one click can show the lattice spin more than once. That is honest, since each spin is a real proof.
