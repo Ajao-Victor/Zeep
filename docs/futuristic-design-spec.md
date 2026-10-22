@@ -82,12 +82,12 @@ Tokens stay in `styles/tokens.css` and are exposed to Tailwind through `@theme i
 | Token | Value | Use | Change |
 | --- | --- | --- | --- |
 | `--void` | `#070706` | Behind 3D scenes and glass. The "space" the UI floats in | New |
-| `--bg` | `#0B0B0A` | Page background | Darker (was `#0F0F0E`) to deepen the glass |
-| `--surface` | `#131311` | Opaque panels, and the glass fallback | Was `#151513` |
+| `--bg` | `#0B0B0A` | Page background | Darker (now `#0F0F0E`) to deepen the glass. **Pending:** applied with the glass migration, since it shifts every page |
+| `--surface` | `#131311` | Opaque panels, and the glass fallback | Now `#151513`. **Pending**, with `--bg` |
 | `--raised` | `#1B1A17` | Hover, selected rows, user chat bubbles | Documented |
 | `--line` | `#24221F` | Hairline borders | — |
 | `--line-strong` | `#312F2A` | Secondary button borders | — |
-| `--text` | `#EEEAE3` | Primary text | Slightly brighter |
+| `--text` | `#EEEAE3` | Primary text | Slightly brighter (now `#ECE8E1`). **Pending**, with `--bg` |
 | `--muted` | `#8C877D` | Secondary text (≈5.4:1 on `--bg`) | — |
 | `--faint` | `#87827A` | Hints: 5.03:1 on `--bg`, 4.79:1 on `--surface`, 4.51:1 on `--raised` | **Raised** from `#6F6B62` (AA fix, shipped). `#827D73` was rejected: 4.47:1 on `--surface` |
 | `--gold` | `#D9A441` | Primary actions, the balance, the proof | — |
@@ -101,6 +101,8 @@ Tokens stay in `styles/tokens.css` and are exposed to Tailwind through `@theme i
 | `--warn` | `#D98A41` | Testnet, shielding | — |
 | `--danger` | `#D06B5C` | Errors, wiped vault | — |
 | `--id-1` … `--id-6` | `#C9785D` `#7FA7C9` `#B58AC9` `#8FBF9A` `#C9B26A` `#C98AA6` | Pre-gate identity colours. **Scenes and identity surfaces only, never UI chrome** | New (taken from `ProofFlowCanvas` `COLORS`) |
+
+**Status (Oct 22):** the new tokens (`--void`, `--gold-deep`, `--gold-glow`, `--anon`, `--anon-glow`, `--id-1`…`--id-6`), the `--faint` fix, elevation, glass and motion tokens have shipped. The darker `--bg`, `--surface` and `--text` values are held back on purpose: they change every existing page at once, so they land in the same commit series as the glass header and surfaces, where the new contrast can be checked against the new materials.
 
 Rule: gold appears where the user acts or a number is counted (unchanged from today). `--anon` appears only on things that have passed a proof. The `--id-*` colours appear only before the gate.
 
