@@ -1,5 +1,8 @@
 export type Network = "testnet" | "mainnet";
 
+/** How much motion and 3D the site may use. "auto" picks a tier per device (lib/fx/tier.ts). */
+export type FxLevel = "auto" | "lite" | "off";
+
 function asNetwork(value: string | undefined): Network {
   return value === "mainnet" ? "mainnet" : "testnet";
 }
@@ -8,6 +11,12 @@ function asNumber(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/** NEXT_PUBLIC_FX_LEVEL wins; the older NEXT_PUBLIC_LANDING_ANIMATION=false still means "off". */
+function asFxLevel(value: string | undefined, legacyLanding: string | undefined): FxLevel {
+  if (value === "auto" || value === "lite" || value === "off") return value;
+  return asFlag(legacyLanding, true) ? "auto" : "off";
 }
 
 function asFlag(value: string | undefined, fallback: boolean): boolean {
@@ -49,6 +58,7 @@ export const config = {
   chatAutodeleteDefault: asFlag(process.env.NEXT_PUBLIC_CHAT_AUTODELETE_DEFAULT, false),
   chatSyncDefault: asFlag(process.env.NEXT_PUBLIC_CHAT_SYNC_DEFAULT, false),
   landingAnimation: asFlag(process.env.NEXT_PUBLIC_LANDING_ANIMATION, true),
+  fxLevel: asFxLevel(process.env.NEXT_PUBLIC_FX_LEVEL, process.env.NEXT_PUBLIC_LANDING_ANIMATION),
   sourceUrl: process.env.NEXT_PUBLIC_SOURCE_URL || "",
   docsUrl: process.env.NEXT_PUBLIC_DOCS_URL || "",
   commitSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "dev",
