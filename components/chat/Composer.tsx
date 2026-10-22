@@ -7,16 +7,19 @@ import { formatCredits, formatZec } from "@/lib/zeep";
 import type { PriceModel, PriceSheet } from "@/lib/zeep/prices";
 import type { Attachment } from "@/lib/chat/types";
 import { fileKind } from "@/lib/chat/files";
+import type { ForgePhase } from "@/lib/fx/forge";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Textarea } from "@/components/ui/Input";
 import { MenuContent, MenuNote, MenuRadioItem } from "@/components/ui/Menu";
+import { ProofButton } from "@/components/ui/ProofButton";
 
 export function Composer({
   value,
   onChange,
   onSend,
   busy,
+  phase,
   modelId,
   onModel,
   prices,
@@ -29,6 +32,8 @@ export function Composer({
   onChange: (value: string) => void;
   onSend: () => void;
   busy: boolean;
+  /** The Forge phase of the paid request (ChatScreen's useForge). */
+  phase: ForgePhase;
   modelId: string;
   onModel: (id: string) => void;
   prices: PriceSheet | null;
@@ -141,9 +146,7 @@ export function Composer({
             <MenuNote>Attachments over 64 KB add {perMb} cr per MB.</MenuNote>
           </MenuContent>
         </DropdownMenu.Root>
-        <Button size="sm" disabled={busy} onClick={onSend} className="ml-auto">
-          {busy ? "Proving…" : "Send"}
-        </Button>
+        <ProofButton size="sm" phase={phase} label="Send" disabled={busy} onClick={onSend} className="ml-auto" />
       </div>
     </div>
   );

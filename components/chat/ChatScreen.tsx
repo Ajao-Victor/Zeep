@@ -12,6 +12,7 @@ import { deleteChat, loadChats, readChatPrefs, saveChat, writeChatPrefs } from "
 import { deleteRemoteChat, deleteRemoteVault, pullChats, pushChat } from "@/lib/chat/sync";
 import type { Attachment, Chat, ChatMessage, ChatPrefs } from "@/lib/chat/types";
 import { titleFrom } from "@/lib/chat/types";
+import { useForge } from "@/lib/fx/useForge";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -32,6 +33,7 @@ export function ChatScreen() {
   const [modelId, setModelId] = useState("");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  const forge = useForge();
   const [hint, setHint] = useState("");
   const [funds, setFunds] = useState(false);
   const [prefs, setPrefs] = useState<ChatPrefs>({ autodelete: false, sync: false });
@@ -195,11 +197,9 @@ export function ChatScreen() {
     const assistant: ChatMessage = { role: "assistant", content: "", model: model.id };
     patch(chat.id, (item) => ({ ...item, messages: [...messages, assistant] }));
     try {
-      const response = await session.client.pay(
-        "POST",
-        "/v1/ai/chat/completions",
-        body,
-        chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb),
+      // The Forge covers the paid request up to the response headers; the reply then streams in.
+      const response = await forge.track(() =>
+        session.client.pay("POST", "/v1/ai/chat/completions", body, chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb)),
       );
       let text = "";
       await readSse(response, (delta) => {
@@ -336,6 +336,7 @@ export function ChatScreen() {
             onChange={setDraft}
             onSend={() => void send()}
             busy={busy}
+            phase={forge.phase}
             modelId={modelId}
             onModel={chooseModel}
             prices={view.prices}
