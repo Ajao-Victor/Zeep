@@ -7,6 +7,8 @@ import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { Toggle, type ToggleOption } from "@/components/ui/Toggle";
 import { useVault } from "@/components/Providers";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 
 const KINDS: ToggleOption<"drug" | "trial">[] = [
   { value: "drug", label: "Drug" },
@@ -21,6 +23,7 @@ export function HealthScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
   const price = view.prices?.routes.health.micro_usd;
 
   async function lookup() {
@@ -30,7 +33,9 @@ export function HealthScreen() {
     setError("");
     setFunds(false);
     try {
-      const body = await payJson<unknown>(session.client, "POST", "/v1/health/lookup", { kind, query, summarize: true }, BigInt(price));
+      const body = await forge.track(() =>
+        payJson<unknown>(session.client, "POST", "/v1/health/lookup", { kind, query, summarize: true }, BigInt(price)),
+      );
       setText(typeof body === "string" ? body : JSON.stringify(body, null, 2));
     } catch (cause) {
       setFunds(isFundsError(cause));
@@ -56,9 +61,14 @@ export function HealthScreen() {
           <div className="min-w-0 flex-1">
             <TextField label="Question" value={query} onChange={setQuery} />
           </div>
-          <Button className="shrink-0" disabled={busy || !query.trim() || price === undefined} onClick={() => void lookup()}>
-            {busy ? "Proving…" : "Look up"}
-          </Button>
+          <ProofButton
+            className="shrink-0"
+            phase={forge.phase}
+            label="Look up"
+            settledLabel="Answered"
+            disabled={busy || !query.trim() || price === undefined}
+            onClick={() => void lookup()}
+          />
         </div>
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
