@@ -18,4 +18,8 @@
   --void: #070706;
   --gold-deep: #8f6418;
   --gold-glow: rgb(217 164 65 / 0.35);
+
+  /* Anonymous: only on things that have passed a proof (trails, receipts, responses). */
+  --anon: #f4f2ee;
+  --anon-glow: rgb(244 242 238 / 0.22);
 }
