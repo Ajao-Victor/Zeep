@@ -57,7 +57,6 @@ export const config = {
   maxUploadMb: asNumber(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB, 20),
   chatAutodeleteDefault: asFlag(process.env.NEXT_PUBLIC_CHAT_AUTODELETE_DEFAULT, false),
   chatSyncDefault: asFlag(process.env.NEXT_PUBLIC_CHAT_SYNC_DEFAULT, false),
-  landingAnimation: asFlag(process.env.NEXT_PUBLIC_LANDING_ANIMATION, true),
   fxLevel: asFxLevel(process.env.NEXT_PUBLIC_FX_LEVEL, process.env.NEXT_PUBLIC_LANDING_ANIMATION),
   sourceUrl: process.env.NEXT_PUBLIC_SOURCE_URL || "",
   docsUrl: process.env.NEXT_PUBLIC_DOCS_URL || "",
