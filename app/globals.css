@@ -27,6 +27,9 @@
   --color-id-4: var(--id-4);
   --color-id-5: var(--id-5);
   --color-id-6: var(--id-6);
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-gold: var(--elev-gold);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }

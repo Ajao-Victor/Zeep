@@ -30,4 +30,9 @@
   --id-4: #8fbf9a;
   --id-5: #c9b26a;
   --id-6: #c98aa6;
+
+  /* Elevation: a lit top edge plus a soft drop. --elev-gold marks the primary action at rest. */
+  --elev-1: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --elev-2: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 64px -24px rgb(0 0 0 / 0.8);
+  --elev-gold: 0 0 0 1px rgb(217 164 65 / 0.5), 0 8px 32px -8px var(--gold-glow);
 }
