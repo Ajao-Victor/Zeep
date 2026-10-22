@@ -14,6 +14,7 @@ import type { Attachment, Chat, ChatMessage, ChatPrefs } from "@/lib/chat/types"
 import { titleFrom } from "@/lib/chat/types";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { Button } from "@/components/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { useToast } from "@/components/Toast";
 import { useVault } from "@/components/Providers";
 import { Composer, rejectKind } from "@/components/chat/Composer";
@@ -287,18 +288,17 @@ export function ChatScreen() {
   return (
     <div className="relative flex h-[calc(100dvh-6.5rem)] min-h-0 overflow-hidden">
       <aside className="hidden w-12 shrink-0 flex-col items-center border-r border-line bg-surface py-3 sm:flex lg:hidden">
-        <button
-          type="button"
-          aria-label={historyOpen ? "Hide chats" : "Show chats"}
+        <IconButton
+          variant="glass"
+          label={historyOpen ? "Hide chats" : "Show chats"}
           aria-pressed={historyOpen}
           onClick={() => setHistoryOpen((open) => !open)}
-          className={historyOpen ? "grid h-9 w-9 place-items-center rounded-lg bg-raised text-text" : "grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-raised"}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
             <rect x="1.5" y="2" width="13" height="12" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
             <path d="M6 2v12" stroke="currentColor" strokeWidth="1.4" />
           </svg>
-        </button>
+        </IconButton>
       </aside>
       <aside className="hidden w-[272px] shrink-0 border-r border-line bg-surface lg:block">{sidebar}</aside>
       {historyOpen ? (
@@ -307,8 +307,10 @@ export function ChatScreen() {
       <section className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-line px-3 py-2 sm:hidden">
           <Dialog.Root open={drawer} onOpenChange={setDrawer}>
-            <Dialog.Trigger className="grid h-9 w-9 place-items-center rounded-lg border border-line" aria-label="Open chats">
-              <span className="flex w-4 flex-col gap-1"><span className="h-px bg-current" /><span className="h-px bg-current" /><span className="h-px bg-current" /></span>
+            <Dialog.Trigger asChild>
+              <IconButton variant="glass" label="Open chats">
+                <span className="flex w-4 flex-col gap-1" aria-hidden="true"><span className="h-px bg-current" /><span className="h-px bg-current" /><span className="h-px bg-current" /></span>
+              </IconButton>
             </Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-40 bg-black/70" />
