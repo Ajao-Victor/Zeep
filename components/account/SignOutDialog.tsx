@@ -11,6 +11,7 @@ import { signOut } from "@/lib/vault/vault";
 import { PhraseGrid } from "@/components/PhraseGrid";
 import { Reauth } from "@/components/flows/Reauth";
 import { useVault } from "@/components/Providers";
+import { Button } from "@/components/Button";
 
 export function SignOutDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { view } = useVault();
@@ -67,16 +68,17 @@ export function SignOutDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           {files > 0 ? (
             <div className="mt-3 text-[14px] leading-relaxed text-muted">
               <p>Your images and files ({files}) are stored only on this device and will be deleted. Download any you want to keep.</p>
-              <button
-                type="button"
-                className="mt-2 rounded-lg border border-line-strong px-3 py-2 text-[14px] text-text hover:bg-raised"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2"
                 onClick={() => {
                   const session = readSession();
                   if (session) void downloadAllFiles(session.network, session.keys.vaultKey);
                 }}
               >
                 Download all
-              </button>
+              </Button>
             </div>
           ) : null}
           {pending.deposit || pending.withdrawal ? (
@@ -105,15 +107,12 @@ export function SignOutDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             <span>I&apos;ve written down my 24 words.</span>
           </label>
           <div className="mt-5 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!saved || busy || view.status !== "unlocked"}
-              onClick={() => void confirm()}
-              className="rounded-lg bg-gold px-3 py-2 text-[14px] font-medium text-on-gold hover:bg-gold-hover disabled:opacity-40"
-            >
+            <Button variant="danger" size="sm" disabled={!saved || busy || view.status !== "unlocked"} onClick={() => void confirm()}>
               {busy ? "Signing out…" : "Sign out"}
-            </button>
-            <Dialog.Close className="rounded-lg border border-line px-3 py-2 text-[14px] text-muted">Cancel</Dialog.Close>
+            </Button>
+            <Dialog.Close asChild>
+              <Button variant="ghost" size="sm">Cancel</Button>
+            </Dialog.Close>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

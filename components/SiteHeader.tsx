@@ -10,6 +10,7 @@ import { cx } from "@/lib/cx";
 import { NetworkToggle } from "@/components/NetworkToggle";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { useVault } from "@/components/VaultState";
+import { Button } from "@/components/Button";
 
 const PUBLIC = [
   { href: "/services", label: "Services" },
@@ -209,10 +210,10 @@ export function SiteHeader() {
             </button>
           </div>
         ) : (
-          <Link href="/get" className="shrink-0 whitespace-nowrap rounded-lg bg-gold px-3 py-2 text-[13px] font-medium leading-none text-on-gold transition-colors duration-150 hover:bg-gold-hover sm:px-3.5 sm:text-[14px]">
+          <Button href="/get" size="sm" className="shrink-0 whitespace-nowrap leading-none">
             <span className="max-[399px]:hidden">Open a balance</span>
             <span className="hidden max-[399px]:inline">Start</span>
-          </Link>
+          </Button>
         )}
       </div>
       {inApp && view.status === "unlocked" ? (

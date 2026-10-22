@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { copyText } from "@/lib/vault/clipboard";
+import { Button } from "@/components/Button";
 
 export function CopyField({
   label,
@@ -21,9 +22,10 @@ export function CopyField({
         <code className="min-w-0 flex-1 truncate rounded-lg border border-line bg-bg px-3 py-2 font-mono text-[12px] text-text">
           {value}
         </code>
-        <button
-          type="button"
-          className="shrink-0 rounded-lg border border-line-strong px-3 py-2 text-[13px] hover:bg-raised"
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shrink-0"
           onClick={() => {
             void copyText(value, secret).then(() => {
               setCopied(true);
@@ -32,7 +34,7 @@ export function CopyField({
           }}
         >
           {copied ? "Copied" : "Copy"}
-        </button>
+        </Button>
       </div>
     </div>
   );

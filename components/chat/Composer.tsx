@@ -7,6 +7,7 @@ import { formatCredits, formatZec } from "@/lib/zeep";
 import type { PriceModel, PriceSheet } from "@/lib/zeep/prices";
 import type { Attachment } from "@/lib/chat/types";
 import { fileKind } from "@/lib/chat/files";
+import { Button } from "@/components/Button";
 
 export function Composer({
   value,
@@ -135,14 +136,9 @@ export function Composer({
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onSend}
-          className="ml-auto rounded-lg bg-gold px-4 py-2 text-[14px] font-medium text-on-gold hover:bg-gold-hover disabled:opacity-50"
-        >
+        <Button size="sm" disabled={busy} onClick={onSend} className="ml-auto">
           {busy ? "Proving…" : "Send"}
-        </button>
+        </Button>
       </div>
     </div>
   );

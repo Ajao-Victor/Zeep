@@ -3,6 +3,7 @@
 import type { Chat } from "@/lib/chat/types";
 import { messageText } from "@/lib/chat/types";
 import { cx } from "@/lib/cx";
+import { Button } from "@/components/Button";
 
 const GROUPS = ["Today", "Yesterday", "Previous 7 days", "Older"] as const;
 
@@ -40,9 +41,9 @@ export function Sidebar({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="grid gap-2 p-3">
-        <button type="button" onClick={onNew} className="rounded-lg border border-line-strong px-3 py-2 text-left text-[14px] hover:bg-raised">
+        <Button variant="secondary" size="sm" onClick={onNew}>
           New chat
-        </button>
+        </Button>
         <input
           value={query}
           onChange={(event) => onQuery(event.target.value)}

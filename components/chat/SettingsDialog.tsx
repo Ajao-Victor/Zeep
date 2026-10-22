@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { fileCount } from "@/lib/chat/blobs";
 import type { ChatPrefs } from "@/lib/chat/types";
 import { readSession } from "@/lib/vault/session";
+import { Button } from "@/components/Button";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -66,29 +67,27 @@ export function SettingsDialog({
             Storage used: {used == null ? "…" : formatBytes(used)}. Files on this device: {files}.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => (confirm ? onDelete() : onConfirm(true))}
-              className="rounded-lg border border-danger px-3 py-2 text-[14px] text-danger hover:bg-line-strong"
-            >
+            <Button variant="danger" size="sm" onClick={() => (confirm ? onDelete() : onConfirm(true))}>
               {confirm ? "Confirm delete all" : "Delete all chats"}
-            </button>
-            <button type="button" onClick={onDeleteFiles} className="rounded-lg border border-line px-3 py-2 text-[14px] text-muted hover:bg-raised">
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onDeleteFiles}>
               Delete all files
-            </button>
+            </Button>
             {hasChat ? (
-              <button type="button" onClick={onDeleteChat} className="rounded-lg border border-line px-3 py-2 text-[14px] text-muted hover:bg-raised">
+              <Button variant="secondary" size="sm" onClick={onDeleteChat}>
                 Delete this chat
-              </button>
+              </Button>
             ) : null}
           </div>
           <div className="mt-6 border-t border-line pt-4">
             <p className="text-[13px] text-faint">Account</p>
-            <button type="button" onClick={onSignOut} className="mt-2 rounded-lg border border-line px-3 py-2 text-[14px] text-text hover:bg-raised">
+            <Button variant="secondary" size="sm" className="mt-2" onClick={onSignOut}>
               Sign out
-            </button>
+            </Button>
           </div>
-          <Dialog.Close className="mt-4 rounded-lg border border-line px-3 py-2 text-[14px] text-muted">Close</Dialog.Close>
+          <Dialog.Close asChild>
+            <Button variant="ghost" size="sm" className="mt-4">Close</Button>
+          </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
