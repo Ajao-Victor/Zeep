@@ -42,4 +42,11 @@
   --glass-2-fill: rgb(27 26 23 / 0.62);
   --glass-2-blur: 24px;
   --glass-edge: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0) 40%);
+
+  /* Motion durations. Instrument UI stays under --dur-base; --dur-cinematic is for signature moments. */
+  --dur-instant: 90ms;
+  --dur-quick: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+  --dur-cinematic: 900ms;
 }
