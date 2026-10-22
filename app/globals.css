@@ -21,6 +21,12 @@
   --color-gold-glow: var(--gold-glow);
   --color-anon: var(--anon);
   --color-anon-glow: var(--anon-glow);
+  --color-id-1: var(--id-1);
+  --color-id-2: var(--id-2);
+  --color-id-3: var(--id-3);
+  --color-id-4: var(--id-4);
+  --color-id-5: var(--id-5);
+  --color-id-6: var(--id-6);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }

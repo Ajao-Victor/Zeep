@@ -22,4 +22,12 @@
   /* Anonymous: only on things that have passed a proof (trails, receipts, responses). */
   --anon: #f4f2ee;
   --anon-glow: rgb(244 242 238 / 0.22);
+
+  /* Identity: before the proof gate only (scenes, the phrase, the note book). Never UI chrome. */
+  --id-1: #c9785d;
+  --id-2: #7fa7c9;
+  --id-3: #b58ac9;
+  --id-4: #8fbf9a;
+  --id-5: #c9b26a;
+  --id-6: #c98aa6;
 }
