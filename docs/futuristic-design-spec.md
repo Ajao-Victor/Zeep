@@ -463,3 +463,96 @@ Measured on a mid-range Android phone (about 4× CPU throttling) and on a recent
 | Scene assets | ≤ 600 KB at T2; posters ≤ 120 KB AVIF each |
 
 Performance is measured locally and in CI with Lighthouse and the browser's performance tools. **No field analytics are added** (the architecture doc forbids Vercel Speed Insights and similar), so lab testing on real devices carries this.
+
+## 9. Implementation plan
+
+### Dependencies
+
+All bundled at build time, all compatible with the production CSP. Pin exact versions in `package.json` when they are added, and pin the npm version first (audit finding 11).
+
+| Package | Purpose | Notes |
+| --- | --- | --- |
+| `three` | WebGL engine | Marketing routes only |
+| `@react-three/fiber` (v9) | React renderer for three.js | v9 is the line that supports React 19, which this app uses |
+| `@react-three/drei` | `View`, `PerformanceMonitor`, helpers | Import per helper. Observe the CDN gotchas in section 5 (`Environment` presets, `useGLTF` Draco path, `Text` fonts) |
+| `@react-three/postprocessing` + `postprocessing` | Bloom, vignette, chromatic aberration, noise | T2/T3 only, loaded with the scene chunk |
+| `motion` | DOM animation: springs, `AnimatePresence`, shared layout (`layoutId`), `useScroll` | Imported from `motion/react`. Drives the scroll story progress as well, so no GSAP is needed |
+| `lenis` | Smooth scrolling | **Optional**, marketing pages on desktop only. Never on app routes (chat scroll must stay native). Off under reduced motion |
+
+Not added: GSAP (Motion's `useScroll` covers the scroll story; revisit only if the timeline outgrows it), Spline/Rive/Lottie cloud runtimes (third-party origins), and `detect-gpu` with its default CDN data.
+
+Shaders live as TypeScript template strings next to their scene, so no webpack loader or `next.config.ts` change is needed for `.glsl` files.
+
+### Configuration
+
+Replace `NEXT_PUBLIC_LANDING_ANIMATION` with **`NEXT_PUBLIC_FX_LEVEL`** = `auto` (default) | `lite` | `off`.
+
+- `auto` uses the tier detection in section 5. `lite` caps everything at T1. `off` forces T0 everywhere.
+- For compatibility, `NEXT_PUBLIC_LANDING_ANIMATION=false` keeps working and means `off`.
+- Add it to `lib/config.ts`, `.env.example` and the architecture doc's "Chat and content" config table.
+
+### File layout
+
+```text
+styles/tokens.css                 # extended token set (section 3)
+lib/motion/tokens.ts              # durations, easings, spring presets shared by DOM and WebGL
+lib/fx/tier.ts                    # tier detection, FPS hysteresis, saved in the IndexedDB prefs record
+lib/fx/busy.ts                    # combines busy signals from the prover, KDF and wallet workers
+lib/zeep/prove.ts                 # + start/end emitter for the Forge (app-owned file, not the copied SDK)
+components/ui/                    # Surface, Button, ProofButton, Counter, BalanceCore, StatusRail,
+                                  # Receipt, Field, Segmented, Dialog, Drawer, Toast, TiltCard
+components/fx/SceneFrame.tsx      # tier pick, poster, lazy load, pause, accessible label
+components/fx/proof-gate/         # Scene, Gate, Particles, Monoliths, Labels, Effects, shaders.ts
+components/fx/membrane/           # /privacy scene config on the same engine
+components/fx/LiteProofFlow.tsx   # T1: today's ProofFlowCanvas, upgraded
+components/fx/VaultDoor.tsx       # CSS 3D + SVG ceremony
+components/fx/Forge.tsx           # Canvas 2D proof animation inside ProofButton
+public/fx/posters/                # T0 AVIF posters, one per scene
+```
+
+### Rollout, in micro-atomic commits
+
+Each bullet is roughly one commit. Every phase leaves the site shippable, and the existing look keeps working until a screen is migrated.
+
+**Phase 0: foundations**
+- Pin the npm version, and commit the lockfile from a clean install.
+- Add colour tokens. Raise `--faint`. Add glass and elevation tokens. Add motion tokens (CSS), then `lib/motion/tokens.ts`.
+- Add `NEXT_PUBLIC_FX_LEVEL` to config and `.env.example`.
+- Add `lib/fx/tier.ts`, then `lib/fx/busy.ts`, then the emitter in `prove.ts`.
+
+**Phase 1: primitives**
+- One commit per primitive in `components/ui/`, each with its reduced-motion behaviour.
+- Then one commit per screen that switches it to the primitives.
+
+**Phase 2: loose ends from the audit**
+- One commit each: the "Reserve" link label, the footer link, the landing route list, the `/privacy` copy, the Health title, removing `@radix-ui/react-tabs`, removing or reviving `ProofTag`, de-duplicating `phraseWords`, removing `docsUrl`.
+
+**Phase 3: the landing page**
+- `SceneFrame` with the poster → upgrade the T1 canvas → R3F scaffold with one context → gate → particles → monoliths and DOM labels → pointer and click interactions → post-processing by tier → scroll beats 1, 2 and 3 (one commit each) → the closing band.
+
+**Phase 4: ceremonies**
+- `VaultDoor` → wire it into `/get`, `/unlock`, `/restore`, lock and the network switch (one commit each).
+- `Forge` and `ProofButton` → wire them into chat, Search, Health, Chain, Inbox, Agents and Withdraw (one commit each).
+
+**Phase 5: remaining screens**
+- `/privacy` Membrane, `/reserve` gauge, `/deposit`, `/credits`, `/services`, chat restyle, Service Console, `/inbox`, `/agents`, 404.
+
+**Phase 6: hardening and docs**
+- The Playwright CSP and off-origin check, reduced-motion screenshots, Lighthouse budgets in CI, and a real-device pass on the matrix below.
+- Update `docs/frontend-architecture.md`: the Design direction and Landing page paragraphs, the Tech stack table, the Design system tokens, Motion, the config vars and the Project layout. Extend its deploy checklist with "every scene has a working T0 poster and T1 fallback".
+
+**Device matrix:** a mid-range Android phone (Chrome), an iPhone from the last four years (Safari), an iPad, a low-power Windows laptop with integrated graphics (Edge), and a recent Mac (Safari, Chrome, Firefox).
+
+### Open decisions
+
+| # | Decision | Recommendation |
+| --- | --- | --- |
+| 1 | Add a display typeface? | Start with Inter's optical sizes. Add one face only if the hero needs more character |
+| 2 | Copy button for the recovery phrase? | No (section 8) |
+| 3 | Smooth scrolling (Lenis) on marketing pages? | Yes on desktop, off on touch and under reduced motion |
+| 4 | A WebGL version of the Vault Door at T3? | Not at first. Revisit after Phase 4 if the CSS version feels flat |
+| 5 | Light theme? | Out of scope. The token structure keeps it possible |
+
+### Definition of done
+
+The redesign is done when every route is migrated, the three signature moments run on the device matrix at their tiers, every guardrail in section 8 passes, reduced-motion and T0 versions are complete and pleasant, and `docs/frontend-architecture.md` describes the new system.
