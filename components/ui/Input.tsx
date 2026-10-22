@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 import { cx } from "@/lib/cx";
 
 // Static class names so Tailwind can see them. The tint colours the focus border and ring.
@@ -32,7 +32,7 @@ function fieldClasses({ invalid = false, tint = "gold" }: FieldLook, className?:
 }
 
 /** Text input: glass at rest, raised glass on focus, tinted border and ring. */
-export function Input({ invalid, tint, className, ...props }: FieldLook & InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ invalid, tint, className, ...props }: FieldLook & ComponentProps<"input">) {
   return <input aria-invalid={invalid || undefined} className={fieldClasses({ invalid, tint }, className)} {...props} />;
 }
 
@@ -43,7 +43,7 @@ export function Textarea({
   resizable = false,
   className,
   ...props
-}: FieldLook & { resizable?: boolean } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: FieldLook & { resizable?: boolean } & ComponentProps<"textarea">) {
   return (
     <textarea
       aria-invalid={invalid || undefined}
