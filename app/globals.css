@@ -258,7 +258,9 @@ body {
   border-radius: inherit;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--dur-slow) var(--curve-move);
+  /* Layers stack in story order (identity, gold, white): the incoming one fades in on top, and the
+     outgoing one waits until it is covered, so a hand-off never passes through a muddy mix. */
+  transition: opacity var(--dur-base) var(--curve-move) var(--dur-slow);
 }
 
 .forge-identity {
@@ -287,6 +289,7 @@ body {
 .forge[data-phase="sending"] .forge-gold,
 .forge[data-phase="settled"] .forge-white {
   opacity: 1;
+  transition: opacity var(--dur-slow) var(--curve-move);
 }
 
 .forge-content {
