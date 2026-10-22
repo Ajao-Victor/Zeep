@@ -54,8 +54,10 @@ body {
   color: var(--text);
 }
 
+/* The focus ring takes the nearest --tint (set by tint-*), so a danger button or an invalid field
+   rings in its own colour. Untinted elements keep gold. */
 :focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--tint, var(--gold));
   outline-offset: 2px;
 }
 
