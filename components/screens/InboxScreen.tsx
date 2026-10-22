@@ -9,6 +9,8 @@ import { Button } from "@/components/Button";
 import { CopyField } from "@/components/CopyField";
 import { Page, PageIntro, Panel } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 
 type Message = { id?: string; memo?: string; amount?: string; created_at?: string };
 
@@ -18,6 +20,7 @@ export function InboxScreen() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
   const price = view.prices?.routes.inbox.micro_usd;
 
   async function create() {
@@ -27,7 +30,7 @@ export function InboxScreen() {
     setError("");
     setFunds(false);
     try {
-      const response = await session.client.pay("POST", "/v1/inbox", "", BigInt(price));
+      const response = await forge.track(() => session.client.pay("POST", "/v1/inbox", "", BigInt(price)));
       const body = await readPaid<{ inbox_id: string; address: string }>(response);
       await setInbox(body.inbox_id, body.address);
     } catch (cause) {
@@ -66,7 +69,7 @@ export function InboxScreen() {
             </div>
           </>
         ) : (
-          <Button disabled={Boolean(busy) || price === undefined} onClick={() => void create()}>{busy || "Open an inbox"}</Button>
+          <ProofButton phase={forge.phase} label="Open an inbox" settledLabel="Opened" disabled={Boolean(busy) || price === undefined} onClick={() => void create()} />
         )}
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
