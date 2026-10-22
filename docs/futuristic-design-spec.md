@@ -418,3 +418,48 @@ Before an inbox exists: a single glass card, "An address with no name on it.", w
 ### `/agents` (Instrument)
 
 A glass form (label, amount, recipient spend key, optional note key) with a `ProofButton` "Transfer". On success, a short animation shows one white mote leaving for the recipient.
+
+## 8. Guardrails: security, accessibility and performance
+
+These are acceptance criteria. A screen isn't done until it meets them.
+
+### Security
+
+The redesign must not weaken any guarantee in the architecture doc's "What the frontend must guarantee" list.
+
+- **No new origins.** No CDN, font service, analytics, error tracker, 3D cloud embed (Spline, Sketchfab and similar) or remote asset. The CSP and `connect-src` stay exactly as they are. A Playwright check loads every route on a production build and fails on any CSP violation or off-origin request.
+- **No `eval`.** Every new dependency must run under `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'` in production. Check this before adding a library, not after.
+- **Secrets are DOM text only.** The recovery phrase, PIN digits and keys are never drawn into a canvas, a WebGL texture, an SVG `<text>` generated from data, or CSS `content:`. They are never passed to an animation library as data.
+- **No secret effects.** No text scramble, typewriter or glitch effect on phrase words or the PIN. No cursor-following glow on `/get`, `/unlock`, `/restore`, `Reauth` or `SignOutDialog`.
+- **The PIN pad doesn't point at the key.** Press feedback is the same subtle dim on every key, and the visible confirmation happens on the dot row. A large ripple or glow on the pressed key would show a shoulder-surfer (or a screen recording) which digit was entered.
+- **The phrase is hidden by default.** Words are blurred until press-and-hold, and blur again on release and when the tab is hidden. Recommendation: **no copy button for the phrase** (audit finding 9). Copying a phrase puts it in the clipboard history of many operating systems, which the 30-second clear can't undo. If one is added, it must pass `secret` to `CopyField`.
+- **Motion never fakes trust.** Proof, credit and confirmation animations play only on the real state change (section 6). The landing scene stays labelled "simulated live".
+- **Auto-lock still wins.** The idle and hidden-tab auto-lock in `VaultState.tsx` interrupts any ceremony. The Vault Door closing animation may play, but must not delay clearing the session.
+
+### Accessibility (WCAG 2.2 AA)
+
+- **Contrast.** All text at least 4.5:1, and large text and UI parts at least 3:1, checked against the worst-case backdrop for glass. This is why `--faint` is raised.
+- **Reduced motion and transparency.** Both media queries are honoured as described in sections 3 and 4.
+- **Keyboard.** Every interactive element is reachable and operable by keyboard, with the gold `:focus-visible` ring kept (and animated). Scenes take no keyboard focus. Their interactions (click the gate) are decorative only.
+- **Screen readers.** Each scene has one concise `aria-label` describing its meaning, not its graphics (the current canvas labels are a good model). Counters announce only their final value. The Forge phases are announced through a polite live region ("Proving", "Sent", "Paid").
+- **No information in motion alone.** Every state shown by animation (confirmations, tranches, coverage) is also shown as text.
+- **Touch targets** at least 44 × 44 px for PIN keys, toggles and icon buttons.
+- **Zoom and reflow.** Layouts work at 400% zoom and 320 px width without horizontal scrolling (except the app nav scroller and code panels).
+
+### Performance budgets
+
+Measured on a mid-range Android phone (about 4× CPU throttling) and on a recent laptop, with production builds.
+
+| Metric | Budget |
+| --- | --- |
+| Largest Contentful Paint | ≤ 2.5 s on mobile. The hero `<h1>` must paint before any scene code loads |
+| Interaction to Next Paint | ≤ 200 ms, including while a proof is being built |
+| Cumulative Layout Shift | ≤ 0.05. Scenes reserve their box, and the Forge keeps the button width |
+| Landing JS before interaction | No increase over today. The scene chunk loads after first paint (`requestIdleCallback` or on first scroll or pointer move) |
+| Landing scene chunk | ≤ 250 KB gzipped (three.js core, R3F, the effects used, the scene code) |
+| App route JS | ≤ +30 KB gzipped over today for Motion and the primitives. **No three.js on app routes** |
+| Frame rate | 60 FPS at T2/T3 on laptops; at least 30 FPS at T1/T2 on phones, or the tier drops |
+| GPU memory | ≤ 150 MB for the landing scene at T3 |
+| Scene assets | ≤ 600 KB at T2; posters ≤ 120 KB AVIF each |
+
+Performance is measured locally and in CI with Lighthouse and the browser's performance tools. **No field analytics are added** (the architecture doc forbids Vercel Speed Insights and similar), so lab testing on real devices carries this.
