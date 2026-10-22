@@ -68,7 +68,7 @@ These are small, but each touches a screen the redesign rebuilds, so fixing them
 6. **`lib/api/client.ts` and `lib/api/schemas.ts` are mostly legacy** (plans, leaves, refund tranches, `/v1/chain/call`). Only `api().reserve()` is used. Don't build new UI on them. Prune them in a separate cleanup.
 7. **Dead code:** `@radix-ui/react-tabs` is installed but never imported. `components/ProofTag.tsx` is never used. `config.docsUrl` is no longer read since the FAQ replaced the Docs link. `phraseWords` is defined twice (`PhraseGrid.tsx` and `GetFlow.tsx`).
 8. **Tokens missing from the doc:** `--on-gold` and `--raised` exist in `styles/tokens.css` but not in the architecture doc's token table. The new token set below documents everything.
-9. **The secret-copy path is unused:** `CopyField` supports `secret` (clear the clipboard after 30 s), but nothing passes it, and `PhraseGrid` has no copy button. The doc's "copied recovery words are cleared" rule has no UI behind it. Decide deliberately (section 8 recommends no copy button for the phrase).
+9. **The secret-copy path is unused:** `CopyField` supports `secret` (clear the clipboard after 30 s), but nothing passes it, and `PhraseGrid` has no copy button. The doc's "copied recovery words are cleared" rule has no UI behind it. **Ruled (Oct 22): no copy button for the phrase** (section 8).
 10. **The landing hero has no image**, so its Largest Contentful Paint element is the `<h1>` text. That is fast, and the 3D hero must not regress it (section 8).
 11. **Working tree note:** after cloning, `package-lock.json` shows unstaged changes that strip `"libc"` fields (a different npm version rewrote it). This spec doesn't touch it. Pin the npm version in `package.json` `engines`/`packageManager` before adding the dependencies in section 9.
 12. **`--faint` (#6F6B62) fails WCAG AA for text.** It measures about 3.6:1 on `--bg`, yet it is used for 12–13 px hints, the footer and empty-state copy. Section 3 raises it to at least 4.5:1.
@@ -432,7 +432,7 @@ The redesign must not weaken any guarantee in the architecture doc's "What the f
 - **Secrets are DOM text only.** The recovery phrase, PIN digits and keys are never drawn into a canvas, a WebGL texture, an SVG `<text>` generated from data, or CSS `content:`. They are never passed to an animation library as data.
 - **No secret effects.** No text scramble, typewriter or glitch effect on phrase words or the PIN. No cursor-following glow on `/get`, `/unlock`, `/restore`, `Reauth` or `SignOutDialog`.
 - **The PIN pad doesn't point at the key.** Press feedback is the same subtle dim on every key, and the visible confirmation happens on the dot row. A large ripple or glow on the pressed key would show a shoulder-surfer (or a screen recording) which digit was entered.
-- **The phrase is hidden by default.** Words are blurred until press-and-hold, and blur again on release and when the tab is hidden. Recommendation: **no copy button for the phrase** (audit finding 9). Copying a phrase puts it in the clipboard history of many operating systems, which the 30-second clear can't undo. If one is added, it must pass `secret` to `CopyField`.
+- **The phrase is hidden by default.** Words are blurred until press-and-hold, and blur again on release and when the tab is hidden. **Ruling: the recovery phrase never gets a copy button** (audit finding 9). Users write the words down by hand. A copied phrase can be read by clipboard-hijacking malware and lands in the clipboard history of many operating systems, which the 30-second clear can't undo. This also rules out "copy all", share, download and QR export of the phrase.
 - **Motion never fakes trust.** Proof, credit and confirmation animations play only on the real state change (section 6). The landing scene stays labelled "simulated live".
 - **Auto-lock still wins.** The idle and hidden-tab auto-lock in `VaultState.tsx` interrupts any ceremony. The Vault Door closing animation may play, but must not delay clearing the session.
 
@@ -548,7 +548,7 @@ Each bullet is roughly one commit. Every phase leaves the site shippable, and th
 | # | Decision | Recommendation |
 | --- | --- | --- |
 | 1 | Add a display typeface? | Start with Inter's optical sizes. Add one face only if the hero needs more character |
-| 2 | Copy button for the recovery phrase? | No (section 8) |
+| 2 | Copy button for the recovery phrase? | **Ruled: no.** Write it down by hand (section 8) |
 | 3 | Smooth scrolling (Lenis) on marketing pages? | Yes on desktop, off on touch and under reduced motion |
 | 4 | A WebGL version of the Vault Door at T3? | Not at first. Revisit after Phase 4 if the CSS version feels flat |
 | 5 | Light theme? | Out of scope. The token structure keeps it possible |
