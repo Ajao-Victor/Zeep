@@ -72,3 +72,73 @@ These are small, but each touches a screen the redesign rebuilds, so fixing them
 10. **The landing hero has no image**, so its Largest Contentful Paint element is the `<h1>` text. That is fast, and the 3D hero must not regress it (section 8).
 11. **Working tree note:** after cloning, `package-lock.json` shows unstaged changes that strip `"libc"` fields (a different npm version rewrote it). This spec doesn't touch it. Pin the npm version in `package.json` `engines`/`packageManager` before adding the dependencies in section 9.
 12. **`--faint` (#6F6B62) fails WCAG AA for text.** It measures about 3.6:1 on `--bg`, yet it is used for 12–13 px hints, the footer and empty-state copy. Section 3 raises it to at least 4.5:1.
+
+## 3. Design tokens
+
+Tokens stay in `styles/tokens.css` and are exposed to Tailwind through `@theme inline` in `app/globals.css`, exactly as today. **Existing names keep their meaning**, so current components keep working while screens migrate one at a time. New tokens are additive.
+
+### Colour
+
+| Token | Value | Use | Change |
+| --- | --- | --- | --- |
+| `--void` | `#070706` | Behind 3D scenes and glass. The "space" the UI floats in | New |
+| `--bg` | `#0B0B0A` | Page background | Darker (was `#0F0F0E`) to deepen the glass |
+| `--surface` | `#131311` | Opaque panels, and the glass fallback | Was `#151513` |
+| `--raised` | `#1B1A17` | Hover, selected rows, user chat bubbles | Documented |
+| `--line` | `#24221F` | Hairline borders | — |
+| `--line-strong` | `#312F2A` | Secondary button borders | — |
+| `--text` | `#EEEAE3` | Primary text | Slightly brighter |
+| `--muted` | `#8C877D` | Secondary text (≈5.4:1 on `--bg`) | — |
+| `--faint` | `#827D73` | Hints (≥4.5:1 on `--bg`; verify with a checker) | **Raised** from `#6F6B62` (AA fix) |
+| `--gold` | `#D9A441` | Primary actions, the balance, the proof | — |
+| `--gold-hover` | `#E6B656` | Gold hover | — |
+| `--gold-deep` | `#8F6418` | Shadow side of gold surfaces and lattice edges | New |
+| `--gold-glow` | `rgb(217 164 65 / 0.35)` | Bloom tint, focus glow, emissive rims | New |
+| `--on-gold` | `#141311` | Text on gold | Documented |
+| `--anon` | `#F4F2EE` | Post-gate "anonymous" white: request trails, receipts | New |
+| `--anon-glow` | `rgb(244 242 238 / 0.22)` | Glow for anonymous particles | New |
+| `--ok` | `#9CB58A` | Confirmed | — |
+| `--warn` | `#D98A41` | Testnet, shielding | — |
+| `--danger` | `#D06B5C` | Errors, wiped vault | — |
+| `--id-1` … `--id-6` | `#C9785D` `#7FA7C9` `#B58AC9` `#8FBF9A` `#C9B26A` `#C98AA6` | Pre-gate identity colours. **Scenes and identity surfaces only, never UI chrome** | New (taken from `ProofFlowCanvas` `COLORS`) |
+
+Rule: gold appears where the user acts or a number is counted (unchanged from today). `--anon` appears only on things that have passed a proof. The `--id-*` colours appear only before the gate.
+
+### Glass and depth
+
+Glass is the main new material. It is a surface with translucency, background blur, a lit top edge and a hairline border.
+
+| Token | Value |
+| --- | --- |
+| `--glass-1` | `rgb(19 19 17 / 0.72)` + `backdrop-filter: blur(16px) saturate(1.2)`. Header, cards over scenes |
+| `--glass-2` | `rgb(27 26 23 / 0.62)` + `blur(24px)`. Modals, drawers, popovers |
+| `--glass-edge` | `linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0) 40%)`, painted as a 1px inner border via `mask` |
+| `--elev-1` | `0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7)` |
+| `--elev-2` | `0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 64px -24px rgb(0 0 0 / 0.8)` |
+| `--elev-gold` | `0 0 0 1px rgb(217 164 65 / 0.5), 0 8px 32px -8px var(--gold-glow)`. Primary action at rest |
+
+Glass rules:
+
+- Text on glass must still pass 4.5:1 against the **worst-case** backdrop. The minimum opacity values above are chosen for that. Never go below them.
+- `@media (prefers-reduced-transparency: reduce)` swaps every glass surface for the opaque `--surface` and drops the blur.
+- Where `backdrop-filter` is unsupported, fall back to opaque `--surface` (an `@supports` guard).
+- Don't stack more than two blurred layers. Blur is expensive on mobile GPUs.
+
+### Type
+
+| Role | Face | Sizes (desktop / phone) | Notes |
+| --- | --- | --- | --- |
+| Display | Inter variable (optical size), or one added display face (open decision below) | 96 / 48, 64 / 40 | Tracking `-0.045em`, weight 560–640. Hero headlines can animate weight on reveal |
+| Heading | Inter | 44 / 32, 32 / 26, 20 / 18 | Tracking `-0.025em` |
+| Body | Inter | 17, 15, 14 | Unchanged |
+| Numeric | JetBrains Mono | 13–64 | **Always `font-variant-numeric: tabular-nums`**, so animated counters don't jitter |
+| Label | JetBrains Mono | 11–12, uppercase, tracking `0.08em` | Kickers, step numbers, proof IDs |
+
+Both faces stay self-hosted through `next/font` (`font-src 'self'`). **Open decision:** whether to add a single display face (for example Geist or Space Grotesk, loaded the same way) for the hero and section headings. The recommendation is to start with Inter's optical sizes and add a face only if the hero lacks character after the 3D work lands.
+
+### Layout, radius and layers
+
+- **Grid:** 12 columns. Content max 1200 px (unchanged), plus a 1440 px "bleed" width for hero scenes. 32 px gutters, 16 px on phones (unchanged).
+- **Spacing:** 4 px base, with the 8 px scale for layout.
+- **Radius:** `--r-xs 6`, `--r-sm 8` (buttons), `--r-md 12` (panels), `--r-lg 16`, `--r-xl 24` (hero cards), `--r-full`.
+- **Z layers:** `--z-scene 0`, `--z-content 10`, `--z-header 30`, `--z-overlay 40`, `--z-modal 50`, `--z-toast 60`. These match the values already used by `SiteHeader`, the Radix overlays and `Toast`, and give them names.
