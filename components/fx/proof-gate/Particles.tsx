@@ -88,6 +88,7 @@ const fragment = /* glsl */ `
     float a = smoothstep(0.5, 0.05, d) * vAlpha * uAlpha;
     if (a < 0.01) discard;
     gl_FragColor = vec4(vColor, a);
+    #include <colorspace_fragment>
   }
 `;
 

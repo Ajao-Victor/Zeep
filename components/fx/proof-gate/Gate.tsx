@@ -28,6 +28,7 @@ const horizonFragment = /* glsl */ `
     float core = (1.0 - d) * 0.1;
     float a = rim * (0.28 + 0.45 * uEnergy) + swirl * rim * 0.16 + core * (0.5 + uEnergy);
     gl_FragColor = vec4(uGold, a);
+    #include <colorspace_fragment>
   }
 `;
 
