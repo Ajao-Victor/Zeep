@@ -55,3 +55,12 @@
   --curve-move: cubic-bezier(0.65, 0, 0.35, 1);
   --curve-exit: cubic-bezier(0.7, 0, 0.84, 0);
 }
+
+/* Reduced motion: long Mechanism and Cinematic timings collapse to a short crossfade.
+   Components still drop their transforms; these caps are the safety net. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-slow: 150ms;
+    --dur-cinematic: 150ms;
+  }
+}
