@@ -142,3 +142,71 @@ Both faces stay self-hosted through `next/font` (`font-src 'self'`). **Open deci
 - **Spacing:** 4 px base, with the 8 px scale for layout.
 - **Radius:** `--r-xs 6`, `--r-sm 8` (buttons), `--r-md 12` (panels), `--r-lg 16`, `--r-xl 24` (hero cards), `--r-full`.
 - **Z layers:** `--z-scene 0`, `--z-content 10`, `--z-header 30`, `--z-overlay 40`, `--z-modal 50`, `--z-toast 60`. These match the values already used by `SiteHeader`, the Radix overlays and `Toast`, and give them names.
+
+## 4. Motion system
+
+Motion has three registers. Each screen picks one, and only the signature moments use the third.
+
+| Register | Character | Where |
+| --- | --- | --- |
+| **Instrument** | Fast, precise, under 250 ms, no overshoot | App screens: inputs, menus, toggles, toasts, chat |
+| **Mechanism** | Weighted springs, a slight settle, 300–700 ms | Panels entering, steppers, the balance counter, the network switch |
+| **Cinematic** | Choreographed timelines, 0.8–3 s, scroll-linked or state-linked | The Proof Gate, the Forge, the Vault Door, the landing scroll story |
+
+### Tokens
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--dur-instant` | 90 ms | Press feedback |
+| `--dur-quick` | 150 ms | Colour and opacity changes (today's button timing) |
+| `--dur-base` | 240 ms | Menus, tooltips, small layout changes |
+| `--dur-slow` | 420 ms | Panels, modals, route content |
+| `--dur-cinematic` | 900 ms+ | Signature moments |
+| `--ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Default for entering (expo-out) |
+| `--ease-in-out` | `cubic-bezier(0.65, 0, 0.35, 1)` | Moving between two places |
+| `--ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Leaving (always shorter than entering) |
+| `spring.snappy` | stiffness 500, damping 38 | Toggles, chips, the PIN dots |
+| `spring.weighty` | stiffness 220, damping 28, mass 1.2 | Panels, the vault door, cards |
+| `spring.float` | stiffness 60, damping 14 | Ambient drift in scenes |
+
+The CSS values live in `styles/tokens.css`. The spring presets live in `lib/motion/tokens.ts`, shared by Motion (DOM) and the 3D scenes, so DOM and WebGL move with the same physics.
+
+### Choreography rules
+
+- **Stagger** lists at 40 ms per item. Cap a stagger at 8 items; later items appear with the eighth.
+- **Enter from where the user's attention is.** A modal scales from its trigger (Radix exposes the trigger rect). A toast rises from the bottom edge. A route's content rises 12 px and fades.
+- **Exit faster than enter**, roughly 60% of the entry duration.
+- **One hero motion per viewport.** If the Proof Gate is on screen, nothing else animates on its own.
+- **Never animate layout-thrashing properties.** Transform, opacity, filter and clip-path only. Height animations use the `grid-template-rows: 0fr → 1fr` technique (FAQ, settings).
+- **No flashing.** Nothing flashes more than three times per second (WCAG 2.3.1). Bloom pulses are slow (≥ 1.2 s) and low contrast.
+- **Numbers settle fast.** An animated counter reaches its final value within 600 ms and is never mid-roll when the user can act on it.
+
+### Route transitions
+
+Use the browser View Transitions API (`document.startViewTransition`) for same-document route changes where it is supported, with Next's built-in view-transition support when it is stable in the installed Next 15 version. Named elements carry across routes:
+
+- The header balance (`view-transition-name: balance`) morphs into the big balance on `/credits` and `/services`.
+- A service card morphs into its screen's header when opened from `/services`.
+- Unsupported browsers get a plain 240 ms fade. Reduced motion gets an instant swap.
+
+### Micro-interactions
+
+| Element | Interaction |
+| --- | --- |
+| Primary button | Gold sheen sweeps across on hover (a masked gradient, 700 ms). A 2 px press-in on `:active`. A soft magnetic pull toward the cursor (max 4 px) on desktop marketing pages only |
+| Secondary button | Hairline border brightens to `--line-strong` → `--gold` at 40% opacity |
+| Inputs | Focus draws the gold ring from the left edge (clip-path, 240 ms). Invalid shakes 3 × 4 px once |
+| Balance in the header | An odometer roll per digit when the note book changes (`emit()` in `lib/vault/session.ts`). Down-rolls tint `--muted` for 600 ms, up-rolls tint `--gold` |
+| Copy buttons | "Copy" → check icon draws itself (SVG stroke-dashoffset) → back after 1.5 s (today's timing) |
+| Toggles and segmented controls | A gold pill slides between options with `spring.snappy` (network toggle, Drug/Trial, chain chips) |
+| Toasts | Rise and un-blur (8 px → 0) in, fall and blur out. Danger toasts get one 4 px horizontal nudge |
+| Cards | 3D tilt toward the cursor (max 6°), with a specular highlight following it. Desktop only, and never on secret screens |
+
+### Reduced motion
+
+`prefers-reduced-motion: reduce` is honoured everywhere, as it is today:
+
+- Cinematic and Mechanism registers fall back to opacity crossfades of ≤ 150 ms.
+- Scenes render one still frame (the existing `ProofFlowCanvas` behaviour) and stop their loop.
+- Counters jump straight to the value. Tilt, magnetic pull and parallax are off.
+- Smooth scrolling (Lenis) is not started.
