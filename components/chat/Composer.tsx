@@ -8,6 +8,7 @@ import type { PriceModel, PriceSheet } from "@/lib/zeep/prices";
 import type { Attachment } from "@/lib/chat/types";
 import { fileKind } from "@/lib/chat/files";
 import { Button } from "@/components/Button";
+import { IconButton } from "@/components/ui/IconButton";
 
 export function Composer({
   value,
@@ -102,16 +103,11 @@ export function Composer({
       />
       {hint ? <p className="mt-1 text-[12px] text-warn">{hint}</p> : null}
       <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Attach a file"
-          onClick={() => fileRef.current?.click()}
-          className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted hover:bg-raised"
-        >
+        <IconButton variant="glass" label="Attach a file" onClick={() => fileRef.current?.click()}>
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
             <path d="M6.2 8.8 9.7 5.3a2.2 2.2 0 0 1 3.1 3.1l-4.6 4.6a3.2 3.2 0 0 1-4.5-4.5l4.2-4.2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
-        </button>
+        </IconButton>
         <input
           ref={fileRef}
           type="file"
