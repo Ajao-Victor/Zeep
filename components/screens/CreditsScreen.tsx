@@ -12,6 +12,8 @@ import { Button } from "@/components/Button";
 import { Reauth } from "@/components/flows/Reauth";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 
 type Watch = {
   id: string;
@@ -37,6 +39,7 @@ export function CreditsScreen() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
   const [watch, setWatch] = useState<Watch | null>(null);
 
   useEffect(() => {
@@ -118,7 +121,7 @@ export function CreditsScreen() {
     setBusy("Proving the withdrawal…");
     setError("");
     try {
-      const outcome = await session.client.withdraw(chosen, address.trim(), { allowTransparent: kind === "transparent" });
+      const outcome = await forge.track(() => session.client.withdraw(chosen, address.trim(), { allowTransparent: kind === "transparent" }));
       if (outcome?.network_fees_paid_by === "zeep") {
         await kvSet(storeKey.feeDay(view.network), utcDay());
         setUsedToday(true);
@@ -214,9 +217,17 @@ export function CreditsScreen() {
         ) : null}
         {stage === "form" ? (
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button disabled={Boolean(busy) || (!max && !amount.trim()) || !address.trim()} onClick={() => void review()}>{busy || "Withdraw"}</Button>
+            <ProofButton
+              phase={forge.phase}
+              label="Withdraw"
+              settledLabel="Requested"
+              disabled={Boolean(busy) || (!max && !amount.trim()) || !address.trim()}
+              onClick={() => void review()}
+            />
             <Button href="/deposit" variant="secondary">Deposit</Button>
             {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
+            {/* Planning makes no proof, so it is plain text beside the button, not a Forge phase. */}
+            {busy && forge.phase === "idle" ? <span className="self-center text-[13px] text-muted">{busy}</span> : null}
           </div>
         ) : null}
       </Panel>
