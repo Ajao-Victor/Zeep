@@ -62,7 +62,7 @@ export function Bokeh({ flow, count }: { flow: Flow; count: number }) {
       seed[index] = index / count + Math.random() * 0.05;
       speed[index] = 0.018 + Math.random() * 0.02;
       y[index] = Math.random();
-      size[index] = 120 + Math.random() * 110;
+      size[index] = 160 + Math.random() * 150;
       tint.set(IDENTITY[index % IDENTITY.length]);
       color.set([tint.r, tint.g, tint.b], index * 3);
       depth[index * 3 + 2] = -0.6;
@@ -88,7 +88,7 @@ export function Bokeh({ flow, count }: { flow: Flow; count: number }) {
       uTop: { value: 0 },
       uBottom: { value: 0 },
       uPixelRatio: { value: 1 },
-      uAlpha: { value: 0.28 },
+      uAlpha: { value: 0.4 },
     }),
     [],
   );
