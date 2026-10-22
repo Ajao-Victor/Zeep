@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SERVICES } from "@/lib/catalog";
 import { Faq } from "@/components/landing/Faq";
 import { ProofFlowCanvas } from "@/components/landing/ProofFlowCanvas";
+import { ServiceCard } from "@/components/ServiceCard";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
 
@@ -56,13 +57,15 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-        <div className="mt-9 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-9 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {SERVICES.map((service) => (
-            <div key={service.id} className="flex h-full flex-col bg-bg p-5 transition-colors duration-150 last:sm:col-span-2 last:lg:col-span-1 hover:bg-raised">
-              <b className="text-[15px] font-medium">{service.name}</b>
-              <p className="mt-1.5 text-[13px] leading-normal text-muted">{service.summary}</p>
-              <span className="mt-auto block pt-3 font-mono text-[12px] text-gold">Priced in credits</span>
-            </div>
+            <ServiceCard
+              key={service.id}
+              name={service.name}
+              summary={service.summary}
+              cost="Priced in credits"
+              className="last:sm:col-span-2 last:lg:col-span-1"
+            />
           ))}
         </div>
       </section>

@@ -20,7 +20,7 @@ export function ServicesScreen() {
           </div>
         </Panel>
       </div>
-      <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SERVICES.map((service) => {
           const micro = service.route
             ? view.prices?.routes[service.route]?.micro_usd
@@ -29,7 +29,7 @@ export function ServicesScreen() {
           return <ServiceCard key={service.id} name={service.name} summary={service.summary} href={service.href} cost={price} />;
         })}
         {SERVICES.length % 2 === 1 ? (
-          <div className="flex h-full flex-col bg-bg p-5">
+          <div className="flex flex-col rounded-xl border border-dashed border-line-strong p-5">
             <b className="text-[15px] font-medium text-muted">Next</b>
             <p className="mt-1.5 text-[13px] leading-normal text-faint">Same proof, same balance.</p>
           </div>
