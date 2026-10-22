@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PinPad } from "@/components/PinPad";
 import { Button } from "@/components/Button";
+import { Textarea } from "@/components/ui/Input";
 import { config } from "@/lib/config";
 import { errorText } from "@/lib/format";
 import { passkeySupported, unlockPasskey } from "@/lib/vault/passkey";
@@ -80,12 +81,12 @@ export function Reauth({
       </div>
       <label className="mt-4 block text-[13px] text-muted">
         Or the recovery phrase
-        <textarea
+        <Textarea
           value={phrase}
           onChange={(event) => setPhrase(event.target.value)}
           rows={3}
           autoComplete="off"
-          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-[14px] text-text outline-none"
+          className="mt-1"
         />
       </label>
       <Button className="mt-2" variant="secondary" disabled={busy || phrase.trim().split(/\s+/).length < 12} onClick={submitPhrase}>
