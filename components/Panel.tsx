@@ -44,8 +44,11 @@ export function Notice({
   tone?: "warn" | "danger" | "ok";
   children: ReactNode;
 }) {
-  const color = tone === "danger" ? "text-danger" : tone === "ok" ? "text-ok" : "text-warn";
-  return <p className={cx("rounded-lg border border-line bg-surface px-3 py-2 text-[13px] leading-relaxed", color)}>{children}</p>;
+  return (
+    <Surface as="p" tint={tone} elevation={0} padding="none" className="px-3 py-2 text-[13px] leading-relaxed text-(--tint)">
+      {children}
+    </Surface>
+  );
 }
 
 export function TextField({
