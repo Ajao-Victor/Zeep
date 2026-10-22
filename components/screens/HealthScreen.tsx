@@ -5,7 +5,13 @@ import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
+import { Toggle, type ToggleOption } from "@/components/ui/Toggle";
 import { useVault } from "@/components/Providers";
+
+const KINDS: ToggleOption<"drug" | "trial">[] = [
+  { value: "drug", label: "Drug" },
+  { value: "trial", label: "Trial" },
+];
 
 export function HealthScreen() {
   const { view } = useVault();
@@ -38,10 +44,14 @@ export function HealthScreen() {
     <Page>
       <PageIntro kicker="Health" title="Look up a condition." lede="The answer is general information, not a diagnosis." />
       <Panel>
-        <div className="mb-3 flex gap-2">
-          <button type="button" onClick={() => setKind("drug")} className={kind === "drug" ? "rounded-full bg-gold px-3 py-1 text-[13px] text-on-gold" : "rounded-full border border-line px-3 py-1 text-[13px] text-muted"}>Drug</button>
-          <button type="button" onClick={() => setKind("trial")} className={kind === "trial" ? "rounded-full bg-gold px-3 py-1 text-[13px] text-on-gold" : "rounded-full border border-line px-3 py-1 text-[13px] text-muted"}>Trial</button>
-        </div>
+        <Toggle
+          layout="chips"
+          label="Lookup type"
+          options={KINDS}
+          value={kind}
+          onChange={setKind}
+          className="mb-3"
+        />
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-0 flex-1">
             <TextField label="Question" value={query} onChange={setQuery} />
