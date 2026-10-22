@@ -318,3 +318,103 @@ Every screen is rebuilt from a small set of primitives. Each row maps a new prim
 | `failed` | The promise rejects, or `isFundsError` | A short shake and the existing error text. A funds error shows "Add funds", as today |
 
 A small event emitter in `lib/zeep/prove.ts` (the app's own file, not part of the copied SDK) publishes "start" and "end". Merges and staged refills also prove, so one click can show the lattice spin more than once. That is honest, since each spin is a real proof.
+
+## 7. Screen by screen
+
+Every route from the architecture doc's route table, plus the shell. "Register" refers to section 4.
+
+### Shell
+
+- **Header.** Glass-1 over the page, condensing on scroll. The logo mark becomes a small gold lattice glyph that turns 60° on route changes. Public links: Services, How it works, **Reserve** (renamed from "Refunds"), FAQ. On the right: the testnet badge, the `Segmented` network switch, then either the balance `Counter` with Lock and Sign out, or the gold "Open a balance" button ("Start" under 400 px, as today).
+- **App nav.** The horizontal scroller under the header gets a gold underline that slides between items (shared layout animation) and edge fades where it scrolls. The active-item centring logic in `SiteHeader` stays.
+- **Footer.** Hairline top border with a slow gold light travelling along it (T2+ only). "Public reserve" becomes a link to `/reserve`. The commit hash stays in mono.
+- **404.** The lattice glyph, cracked and drifting slowly. "This page is not here." and a gold link home. No glitch or flash effects.
+- **Ambient background.** On app routes, a very faint `--void` vignette and one slow, low-contrast gold light leak in a corner (CSS radial gradient, no animation under reduced motion). No WebGL.
+
+### `/` Landing (Cinematic)
+
+1. **Hero.** Full-bleed Proof Gate scene (1440 px). The headline "Pay once. / Stay unlinkable." reveals line by line, with a weight animation from 400 to 600 and a mask wipe. The lede and the two buttons rise after. The three facts (No account, Withdraw any time, One phrase) sit in a glass strip at the bottom edge. The "Built on Zcash shielded payments" kicker keeps its pulsing green dot.
+2. **"Three steps, no identity."** The pinned scroll story from section 5. The three step cards are glass `TiltCard`s that light up in turn as the camera reaches each beat.
+3. **Five services.** The five monoliths come forward. Each service card shows its name and summary, and "Priced in credits" in gold mono. Hovering a card lights its lane in the scene.
+4. **FAQ.** The seven questions keep their numbered layout. Answers expand with the `grid-template-rows` technique, and the number turns gold when open. All questions stay in the DOM for search engines and find-in-page.
+5. **Closing call to action.** A new final band: the gate seen head-on, slowly rotating, with "Open a balance" and the reserve coverage figure (from the public `/v1/reserve`, cached by TanStack Query) as a live trust signal.
+
+### `/privacy` (Cinematic, lighter)
+
+The Membrane scene at the top. Below it, the two lists side by side as glass panels: "What Zeep receives" in `--anon` white and "What stays on this device" in warm tints. Hovering an item highlights its particle. **Rewrite the copy** to the current model (balance, notes, vault), replacing "pass" and "slot map" (audit finding 4). The "Frontier models" and "Two vaults" panels follow, with a link to `/reserve`.
+
+### `/reserve` (Mechanism)
+
+A public dashboard, readable without a vault.
+
+- A large **coverage gauge**: an SVG arc with a gold fill sweeping to `coverage_pct`, the percentage in big mono and a glass halo.
+- **Owed** and **Held** as two vertical columns whose heights animate to their values, so the gap (or surplus) is visible at a glance.
+- **Deposits** and **Services** totals as `Counter`s.
+- The error state ("The public books are unreachable from this browser.") as a calm glass notice with a retry button, not a red alarm.
+
+### `/get` Open a balance (Mechanism, ceremony at the end)
+
+A four-step stepper (Welcome, Phrase, PIN, Deposit), shown as a thin rail with nodes that fill gold as steps complete.
+
+- **Welcome.** Two large glass choices: "Create a new account" and "Sign in with 24 words".
+- **Phrase.** The 24 words in a 3 × 8 grid, blurred until press-and-hold. Then the quiz for words 3, 12 and 21. Each correct answer locks its tile with a gold edge. A wrong one gives a single shake and the existing error copy.
+- **PIN.** The new `PinPad`, entered twice. "Also use fingerprint" is a secondary glass button with a fingerprint glyph that draws itself.
+- **Vault creation.** While `createVault` runs ("Saving the vault…"), the **Vault Door seals**: concentric rings rotate into alignment, bolts slide in, and a gold seam closes. It plays once and is tied to the real promise.
+- **Deposit.** The deposit panel (see `/deposit`) with "Skip for now".
+- If the network already has a balance (locked or unlocked), show the existing message on a glass panel with the door shown closed.
+
+### `/unlock` (Mechanism)
+
+The Vault Door, closed, centred above the `PinPad`. When the user submits, the door's rings start turning in time with "Deriving key…" (the Argon2id worker). On success they align and the door swings open into the next route (`next` param, as today). On a wrong PIN the rings jolt back, and the "N tries left" message appears. **At one try left, the door's seam turns `--warn`.** On the wipe, the door greys out and the restore notice appears. "Unlock with fingerprint" sits above the pad when a passkey exists.
+
+### `/restore` (Mechanism)
+
+24 slots in a grid. Pasting a whole phrase into any slot fills the rest in sequence (the existing `fillWords` behaviour) with a quick cascade. Invalid phrases shake the grid once. During `restoreVault`, the progress messages ("Scanning N notes in tree X", "Finding deposits", "Checking spent notes", "Restoring the wallet", "Restoring chats") become a `StatusRail`, with a determinate bar for the note scan. The result ("Restored. $X in dollars and Y ZEC.") lands as two `Counter`s rolling up.
+
+### `/services` (Mechanism)
+
+`BalanceCore` at the top with the credit total as a big `Counter` and the Deposit button. Below it, the five services as `TiltCard`s in a 2 × 3 grid (the sixth cell stays "Next: same proof, same balance"). Each card shows its live price from `/v1/prices` and a faint lane line that echoes the landing scene.
+
+### `/ai` Private AI (Instrument)
+
+The chat keeps its structure (48 px rail and 272 px sidebar from 640 px up, a drawer below), restyled in glass.
+
+- **Empty thread.** "No identity on this chat." with a small, slowly rotating lattice glyph above it (CSS 3D).
+- **Messages.** User messages in `--raised` glass bubbles, assistant text on the page with no bubble. Streamed tokens fade in per chunk (opacity only, 120 ms). The assistant's model name in faint mono under each reply.
+- **Composer.** A glass bar that lifts 2 px on focus. The Send button is a `ProofButton`, so the Forge plays in the composer during each paid request. Attachments are glass chips with thumbnails, and a drag-over shows a gold dashed drop zone.
+- **Model picker.** A glass dropdown with prices in gold mono and the "reads images" badge. The auto-switch-to-vision toast stays.
+- **Rules.** No autoplaying effects in the thread, and no scroll hijacking. Reduced motion shows tokens without fades.
+
+### `/search`, `/health`, `/chain` (Instrument): the Service Console
+
+The three single-request services share one template:
+
+1. A header with the service name, a one-line description and the live price in credits.
+2. One large `Field` with the `ProofButton` attached to its right edge (a command-bar look). Health adds the Drug/Trial `Segmented` control, and Chain adds the chain `Segmented` control and a Params JSON field in mono.
+3. A results area. Search results are glass cards whose titles are gold links. Health and Chain responses appear in a mono code panel with syntax tints and a copy button.
+4. A `Receipt` under the result.
+
+Fix the Health title to "Look up a drug or a trial." (audit finding 5).
+
+### `/inbox` (Instrument)
+
+Before an inbox exists: a single glass card, "An address with no name on it.", with the `ProofButton` "Open an inbox". After: the address in a mono `CopyField` and messages as glass rows that stagger in on refresh. An empty refresh says so plainly.
+
+### `/deposit` (Mechanism)
+
+- **Wallet card.** A glass card with a subtle holographic edge (a conic-gradient border that shifts with device tilt or the pointer, T2+). The shielded balance as a `Counter`. The unified address in a `CopyField`. "My exchange can't send to this address" reveals the transparent address with a height animation. "Shielding 0.0x ZEC…" shows a slow shimmer on the balance.
+- **Amount and estimate.** The ZEC amount in a mono `Field`. The estimate renders as a **split bar**: the part kept as ZEC and the part converted to dollars, with the conversion fee as a thin slice, updating live as the user types. The "Estimate" note stays.
+- **Payment.** The QR sits in a glass frame, but **the QR itself stays flat, high-contrast and still** (dark on light, as today) so every wallet can scan it. Effects stay on the frame, never on the code.
+- **Status.** A `StatusRail`: waiting → confirming with three ring segments that lock one by one (n/3) → credited. On credit, the breakdown (received, kept, converted, fee, rebate, dollar note) rolls in as `Counter`s.
+
+### `/credits` (Mechanism)
+
+- **Balance.** `BalanceCore` with the three lines (Credits in dollars, ZEC with its value, Total), and the total as the big `Counter` that the header balance morphs into.
+- **Withdraw form.** Amount (with Max) and address `Field`s. The address badge shows shielded or transparent live. The transparent checkbox appears with a warn-tinted glass panel.
+- **Fees line.** "Network fees: covered (first today)" in `--ok`, or the amount.
+- **Conversion confirmation.** When `needsConversion` is true, the form flips (a 3D card flip, Mechanism register) to the confirmation side: ZEC covered, credits converted, the fee, the 20–60 minute timing and the two buttons. "Convert and withdraw" leads to `Reauth`, rendered with the same `PinPad` and Vault Door styling.
+- **Tracking.** A `StatusRail` for converting → scheduled → paying → done, with two tranche nodes that each show their txid when it arrives.
+
+### `/agents` (Instrument)
+
+A glass form (label, amount, recipient spend key, optional note key) with a `ProofButton` "Transfer". On success, a short animation shows one white mote leaving for the recipient.
