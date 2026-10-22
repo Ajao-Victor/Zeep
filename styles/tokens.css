@@ -13,4 +13,9 @@
   --danger: #d06b5c;
   --on-gold: #141311;
   --raised: #1c1b18;
+
+  /* Obsidian: the space behind scenes and glass, and gold as a light source. */
+  --void: #070706;
+  --gold-deep: #8f6418;
+  --gold-glow: rgb(217 164 65 / 0.35);
 }
