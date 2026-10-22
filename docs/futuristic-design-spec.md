@@ -210,3 +210,73 @@ Use the browser View Transitions API (`document.startViewTransition`) for same-d
 - Scenes render one still frame (the existing `ProofFlowCanvas` behaviour) and stop their loop.
 - Counters jump straight to the value. Tilt, magnetic pull and parallax are off.
 - Smooth scrolling (Lenis) is not started.
+
+## 5. 3D system
+
+### Where 3D runs
+
+| Surface | Technique | Why |
+| --- | --- | --- |
+| `/` landing: Proof Gate hero and scroll story | WebGL (three.js via React Three Fiber) | The flagship. Worth the bundle on a marketing page |
+| `/privacy`: the Membrane | WebGL, reusing the Proof Gate engine with a different config | Same engine, no extra bundle |
+| The Forge (every paid request) | Canvas 2D + CSS 3D | Runs on app routes, which must stay light and fast |
+| The Vault Door (`/get`, `/unlock`, `/restore`, lock, network switch) | CSS 3D transforms + SVG (layered rings, conic gradients) | Must start instantly while Argon2id is using 64 MiB in a worker |
+| Balance Core (`/credits`, `/services`) | SVG + CSS 3D | Two-part orb, cheap enough to sit on every visit |
+| Cards, buttons, tilt | CSS 3D (`perspective`, `rotateX/Y`) | No WebGL needed |
+
+**Rule: three.js is loaded only on marketing routes** (`app/(marketing)/*`). App routes never import it, so the vault, chat and payment screens stay fast on every device.
+
+### Scene 1: the Proof Gate (landing)
+
+The current `ProofFlowCanvas` story, rebuilt in 3D.
+
+- **Gate.** An icosahedral lattice ring made of instanced thin bars, in a gold metal material (`MeshPhysicalMaterial`, metalness 1, roughness 0.28, clearcoat). Its rim is emissive and brightens when a request passes and when the cursor is near (as today). Inside the ring sits an "event horizon" disc: a custom shader with screen-space refraction and slow noise distortion. That is cheaper than true transmission and reads the same.
+- **Requests.** GPU-driven particles (instanced points, positions computed in the vertex shader with curl noise), so the CPU only updates uniforms. Before the gate they take the `--id-*` colours with soft trails. Crossing the gate's plane, they flash gold for one frame-group, then turn `--anon` white, shrink slightly and snap into five lanes.
+- **Services.** Five thin glass monoliths, one per lane, labelled Private AI, Search, Health, Chain and Inbox. **Labels are DOM overlays** positioned from 3D coordinates, not 3D text. That keeps them crisp, accessible and translatable, and avoids loading font files into WebGL.
+- **Interaction.** The camera orbits ±4° with the pointer. Particles move away from the cursor (as today). Clicking the gate fires a proof pulse: a ring of light, a burst of white motes and one new line in the proof log.
+- **DOM layer.** The proof log, the "requests verified" and "0 linked to a person" counters and the "simulated live" label stay as DOM over the scene, in glass panels.
+- **Lighting.** `RoomEnvironment` + PMREM, generated in code. No HDRI download.
+- **Post-processing** (by tier): selective bloom on emissive parts only, a vignette, AgX tone mapping, very low film grain, and a slight chromatic aberration at the frame edges at the top tier.
+
+**Scroll story ("How it works").** On desktop the scene pins while the three steps scroll past, and the camera travels:
+
+1. **Deposit any amount.** A ZEC coin drops in and splits: one half stays a ZEC coin, the other becomes a gold dollar coin, and a thin 1.5% shard breaks off it. The real 50/50 split and conversion fee, shown.
+2. **One proof per request.** The camera flies through the gate with a request. The world goes from colour to white.
+3. **Use it, or withdraw.** The camera pulls back to the five monoliths. Then two beams leave for a withdrawal, about 10 and 20 minutes apart (the two tranches), shown as two pulses.
+
+On phones nothing pins. Each step plays its beat once when scrolled into view, at the lite tier, and the step cards carry the explanation.
+
+### Scene 2: the Membrane (`/privacy`)
+
+The same engine with two chambers separated by a glowing membrane. "What Zeep receives" particles (proof, request, refund address, public books) pass through as white. "What stays on this device" particles (PIN, phrase, identity, usage) stay on the left, coloured, and bounce softly off the membrane. Each list item on the page highlights its particle on hover.
+
+### Rendering tiers
+
+| Tier | Gets | Chosen when |
+| --- | --- | --- |
+| **T0 Still** | A prerendered AVIF poster of the scene and the full DOM content | Reduced motion, `Save-Data`, no WebGL, the FX flag set to `off`, or WebGL context loss |
+| **T1 Lite** | The Canvas 2D version (today's `ProofFlowCanvas`, upgraded to the new palette and trails) | WebGL1 only, `deviceMemory` ≤ 2, ≤ 4 cores on a phone, or sustained FPS under 30 at T2 |
+| **T2 Standard** | WebGL2, about 1,500 particles, vignette only, DPR ≤ 1.5 | The default for capable phones and laptops |
+| **T3 Ultra** | About 6,000 particles, trails, selective bloom, chromatic aberration, DPR ≤ 2 | Desktop-class GPUs that hold 55+ FPS at T2 for 3 seconds |
+
+- The first guess uses `hardwareConcurrency`, `deviceMemory`, WebGL2 support and the screen size. A runtime FPS monitor then moves one tier up or down, with hysteresis so it doesn't flap.
+- **Don't use `detect-gpu`'s defaults.** It downloads benchmark data from a CDN, which the CSP blocks. If GPU detection is needed, self-host its data files or skip it.
+- The chosen tier is remembered in the existing `prefs` record in IndexedDB (no personal data, the same as the network choice), so a returning visitor starts on the right tier.
+
+### Render loop rules
+
+- **One WebGL context per page.** Use a single fixed `<Canvas>` behind the content, with drei `View` for any extra viewports. Never a canvas per section.
+- **Render only when it matters.** `frameloop="always"` only while the scene is on screen. Otherwise switch to `"demand"` or stop. Keep today's IntersectionObserver pause.
+- **Back off when the device is busy.** Halve the frame rate and drop a tier while the prover, the Argon2id KDF or the wallet worker is running. `lib/zeep/prove.ts`, `lib/vault/kdf.ts` and `lib/zcash/wallet.ts` each expose a small "busy" signal for this.
+- **Stop when the tab is hidden** (`visibilitychange`).
+- **Handle context loss.** On `webglcontextlost`, show the T0 poster and don't retry until the next navigation.
+- **Dispose** geometries, materials and render targets on unmount.
+
+### Asset rules
+
+- Everything lives under `/public/fx/` and is served same-origin. CSP and COEP leave no alternative.
+- **Prefer procedural geometry.** The gate, particles, lanes and monoliths are all generated in code. The target is zero glTF files for the landing page.
+- If a model is ever needed, compress it with **Meshopt** (its decoder ships as JavaScript in the bundle). If Draco or KTX2 are used, **self-host the decoders** under `/public/fx/decoders/` and point the loaders at them. drei's `useGLTF` defaults the Draco decoder to a Google CDN, which the CSP blocks.
+- **Never use drei `<Environment preset="…">`.** The presets download HDRIs from a CDN. Use `RoomEnvironment` or self-hosted files.
+- **Avoid 3D text.** If it is ever needed, drei `<Text>` must be given a self-hosted font file, because troika's default font comes from a CDN.
+- **Budget:** at most 600 KB of scene assets at T2, textures at most 1024 px, and posters at most 120 KB AVIF each.
