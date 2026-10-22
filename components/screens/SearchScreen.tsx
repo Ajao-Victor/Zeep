@@ -4,6 +4,8 @@ import { useState } from "react";
 import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
 
@@ -16,6 +18,7 @@ export function SearchScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
   const price = view.prices?.routes.search.micro_usd;
 
   async function search() {
@@ -25,12 +28,8 @@ export function SearchScreen() {
     setError("");
     setFunds(false);
     try {
-      const body = await payJson<{ results?: Hit[]; hits?: Hit[] }>(
-        session.client,
-        "POST",
-        "/v1/search",
-        { query },
-        BigInt(price),
+      const body = await forge.track(() =>
+        payJson<{ results?: Hit[]; hits?: Hit[] }>(session.client, "POST", "/v1/search", { query }, BigInt(price)),
       );
       setHits(body.results ?? body.hits ?? []);
     } catch (cause) {
@@ -49,9 +48,14 @@ export function SearchScreen() {
           <div className="min-w-0 flex-1">
             <TextField label="Query" value={query} onChange={setQuery} />
           </div>
-          <Button className="shrink-0" disabled={busy || !query.trim() || price === undefined} onClick={() => void search()}>
-            {busy ? "Proving…" : "Search"}
-          </Button>
+          <ProofButton
+            className="shrink-0"
+            phase={forge.phase}
+            label="Search"
+            settledLabel="Found"
+            disabled={busy || !query.trim() || price === undefined}
+            onClick={() => void search()}
+          />
         </div>
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
