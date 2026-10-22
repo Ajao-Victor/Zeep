@@ -112,3 +112,33 @@ body {
 @utility tint-* {
   --tint: --value(--color-*);
 }
+
+/* Glass: glass-1 for the header and cards over scenes, glass-2 for modals, drawers and popovers.
+   Opaque without backdrop-filter support or under reduced transparency. */
+@utility glass-1 {
+  background-color: var(--surface);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--glass-1-fill);
+    -webkit-backdrop-filter: blur(var(--glass-1-blur)) saturate(1.2);
+    backdrop-filter: blur(var(--glass-1-blur)) saturate(1.2);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-2 {
+  background-color: var(--raised);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--glass-2-fill);
+    -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.2);
+    backdrop-filter: blur(var(--glass-2-blur)) saturate(1.2);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
