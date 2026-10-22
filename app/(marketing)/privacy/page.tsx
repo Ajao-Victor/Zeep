@@ -7,15 +7,15 @@ export const metadata: Metadata = { title: "Privacy" };
 const SEES = [
   "A zero-knowledge proof and the request it pays for",
   "The prompt, search, or lookup itself, because that is the service",
-  "A shielded refund address, only when you ask for one",
-  "Public books: issued, used, refunded, owed, coverage",
+  "The payout address of a withdrawal, only when you withdraw",
+  "Public books: owed, held, coverage, deposits, and services, in dollars",
 ];
 
 const CANNOT = [
-  "Your PIN, recovery phrase, or identity secret",
-  "Which pass a proof came from",
+  "Your PIN, recovery phrase, or spend key",
+  "Which balance a proof was paid from",
   "Who paid for the credits",
-  "Your slot map, usage, or agent keys",
+  "Your notes, usage, or agent keys",
 ];
 
 export default function PrivacyPage() {
@@ -39,11 +39,11 @@ export default function PrivacyPage() {
       <div className="mt-4 grid gap-4">
         <Panel>
           <h2 className="text-[17px] font-medium">Frontier models</h2>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted">Open models run on Zeep. A frontier model is a different provider. That provider sees the prompt, not your pass. The screen says so before you send.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">Open models run on Zeep. A frontier model is a different provider. That provider sees the prompt, not who sent it. The screen says so before you send.</p>
         </Panel>
         <Panel>
           <h2 className="text-[17px] font-medium">Two vaults</h2>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted">Testnet and mainnet are separate passes. Switching networks locks the one you were using. A testnet pass cannot be shown or spent while mainnet is selected.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">Testnet and mainnet are separate vaults. Switching networks locks the one you were using. A testnet balance cannot be shown or spent while mainnet is selected.</p>
           <p className="mt-3 text-[14px] leading-relaxed text-muted">
             The reserve that backs unused credits is public. <Link href="/reserve" className="text-text underline">Read the books.</Link>
           </p>

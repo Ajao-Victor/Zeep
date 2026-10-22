@@ -16,6 +16,23 @@
   --color-danger: var(--danger);
   --color-on-gold: var(--on-gold);
   --color-raised: var(--raised);
+  --color-void: var(--void);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-glow: var(--gold-glow);
+  --color-anon: var(--anon);
+  --color-anon-glow: var(--anon-glow);
+  --color-id-1: var(--id-1);
+  --color-id-2: var(--id-2);
+  --color-id-3: var(--id-3);
+  --color-id-4: var(--id-4);
+  --color-id-5: var(--id-5);
+  --color-id-6: var(--id-6);
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-gold: var(--elev-gold);
+  --ease-enter: var(--curve-enter);
+  --ease-move: var(--curve-move);
+  --ease-exit: var(--curve-exit);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }
@@ -90,5 +107,89 @@ body {
   .step-card:hover {
     transition: background-color 150ms ease, border-color 150ms ease;
     transform: none;
+  }
+}
+
+/* State tint: identity (tint-id-1..6) → proof (tint-gold) → anonymous (tint-anon).
+   Children read var(--tint), e.g. border-(--tint) or text-(--tint). */
+@utility tint-* {
+  --tint: --value(--color-*);
+}
+
+/* Glass: glass-1 for the header and cards over scenes, glass-2 for modals, drawers and popovers.
+   Opaque without backdrop-filter support or under reduced transparency. */
+@utility glass-1 {
+  background-color: var(--surface);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--glass-1-fill);
+    -webkit-backdrop-filter: blur(var(--glass-1-blur)) saturate(1.2);
+    backdrop-filter: blur(var(--glass-1-blur)) saturate(1.2);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-2 {
+  background-color: var(--raised);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: var(--glass-2-fill);
+    -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.2);
+    backdrop-filter: blur(var(--glass-2-blur)) saturate(1.2);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* A 1px lit top edge, drawn as a masked ring. The element must be positioned
+   (relative, sticky, fixed or absolute); the utility doesn't set position so it can't override one. */
+@utility glass-edge {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--glass-edge);
+    pointer-events: none;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+}
+
+/* A light sweep across the element on hover (700ms, one way). Needs a positioned element;
+   uses ::after so it can sit alongside glass-edge. Off when disabled or under reduced motion. */
+@utility sheen {
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 60%;
+    background: linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.32) 50%, transparent 80%);
+    translate: -120% 0;
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    &:hover:not(:disabled)::after {
+      translate: 220% 0;
+      transition: translate 700ms var(--curve-move);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      display: none;
+    }
   }
 }

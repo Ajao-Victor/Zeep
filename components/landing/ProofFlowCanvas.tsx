@@ -99,7 +99,7 @@ export function ProofFlowCanvas() {
     function drawStatic() {
       const narrow = width < 460;
       context!.font = `${narrow ? 10 : 11}px "JetBrains Mono", ui-monospace, monospace`;
-      context!.fillStyle = "#6F6B62";
+      context!.fillStyle = "#87827A";
       context!.textAlign = "left";
       if (!narrow) context!.fillText("requests from many people", 14, 18);
       const glow = mouse.x >= 0 ? 0.22 : 0.12;

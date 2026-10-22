@@ -5,7 +5,7 @@
   --line-strong: #2e2c28;
   --text: #ece8e1;
   --muted: #8c877d;
-  --faint: #6f6b62;
+  --faint: #87827a;
   --gold: #d9a441;
   --gold-hover: #e6b656;
   --ok: #9cb58a;
@@ -13,4 +13,54 @@
   --danger: #d06b5c;
   --on-gold: #141311;
   --raised: #1c1b18;
+
+  /* Obsidian: the space behind scenes and glass, and gold as a light source. */
+  --void: #070706;
+  --gold-deep: #8f6418;
+  --gold-glow: rgb(217 164 65 / 0.35);
+
+  /* Anonymous: only on things that have passed a proof (trails, receipts, responses). */
+  --anon: #f4f2ee;
+  --anon-glow: rgb(244 242 238 / 0.22);
+
+  /* Identity: before the proof gate only (scenes, the phrase, the note book). Never UI chrome. */
+  --id-1: #c9785d;
+  --id-2: #7fa7c9;
+  --id-3: #b58ac9;
+  --id-4: #8fbf9a;
+  --id-5: #c9b26a;
+  --id-6: #c98aa6;
+
+  /* Elevation: a lit top edge plus a soft drop. --elev-gold marks the primary action at rest. */
+  --elev-1: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --elev-2: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 64px -24px rgb(0 0 0 / 0.8);
+  --elev-gold: 0 0 0 1px rgb(217 164 65 / 0.5), 0 8px 32px -8px var(--gold-glow);
+
+  /* Glass: fills are the minimum opacity that keeps text legible. Don't lower them. */
+  --glass-1-fill: rgb(19 19 17 / 0.72);
+  --glass-1-blur: 16px;
+  --glass-2-fill: rgb(27 26 23 / 0.62);
+  --glass-2-blur: 24px;
+  --glass-edge: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0) 40%);
+
+  /* Motion durations. Instrument UI stays under --dur-base; --dur-cinematic is for signature moments. */
+  --dur-instant: 90ms;
+  --dur-quick: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+  --dur-cinematic: 900ms;
+
+  /* Motion curves: enter (expo-out), move between two places, exit (always shorter than enter). */
+  --curve-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --curve-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --curve-exit: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+/* Reduced motion: long Mechanism and Cinematic timings collapse to a short crossfade.
+   Components still drop their transforms; these caps are the safety net. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-slow: 150ms;
+    --dur-cinematic: 150ms;
+  }
 }

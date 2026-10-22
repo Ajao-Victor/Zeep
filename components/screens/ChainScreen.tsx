@@ -6,6 +6,7 @@ import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
+import { Toggle } from "@/components/ui/Toggle";
 import { useVault } from "@/components/Providers";
 
 export function ChainScreen() {
@@ -47,18 +48,13 @@ export function ChainScreen() {
     <Page>
       <PageIntro kicker="Chain" title="One JSON-RPC call." lede="A single call is billed as the 100-call price. The response is the node's JSON." />
       <Panel>
-        <div className="flex flex-wrap gap-2">
-          {CHAINS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setChain(item.id)}
-              className={item.id === chain ? "rounded-full bg-gold px-3 py-1 text-[13px] text-on-gold" : "rounded-full border border-line px-3 py-1 text-[13px] text-muted"}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <Toggle
+          layout="chips"
+          label="Chain"
+          options={CHAINS.map((item) => ({ value: item.id, label: item.label }))}
+          value={chain}
+          onChange={setChain}
+        />
         <div className="mt-4 grid gap-3">
           <TextField label="Method" value={method} onChange={setMethod} />
           <TextField label="Params JSON" value={params} onChange={setParams} />

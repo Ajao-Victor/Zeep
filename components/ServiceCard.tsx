@@ -1,15 +1,18 @@
-import Link from "next/link";
+import { Card, Surface } from "@/components/ui/Surface";
+import { cx } from "@/lib/cx";
 
 export function ServiceCard({
   name,
   summary,
   cost,
   href,
+  className,
 }: {
   name: string;
   summary: string;
   cost: string;
   href?: string;
+  className?: string;
 }) {
   const body = (
     <>
@@ -18,10 +21,16 @@ export function ServiceCard({
       <span className="mt-auto block pt-3 font-mono text-[12px] text-gold">{cost}</span>
     </>
   );
-  if (!href) return <div className="flex h-full flex-col bg-bg p-5">{body}</div>;
+  if (!href) {
+    return (
+      <Surface as="article" padding="card" className={cx("flex flex-col", className)}>
+        {body}
+      </Surface>
+    );
+  }
   return (
-    <Link href={href} className="flex h-full flex-col bg-surface p-5 transition-colors duration-150 hover:bg-raised">
+    <Card href={href} className={className}>
       {body}
-    </Link>
+    </Card>
   );
 }

@@ -1,6 +1,10 @@
 {
   "name": "zeep-web",
   "private": true,
+  "engines": {
+    "node": "22.x",
+    "npm": "10.9.8"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

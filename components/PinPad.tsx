@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { cx } from "@/lib/cx";
+import { Button } from "@/components/Button";
 
 export function PinPad({
   value,
@@ -54,19 +55,20 @@ export function PinPad({
           key === "empty" ? (
             <span key={key} />
           ) : (
-            <button
+            <Button
               key={key}
-              type="button"
+              variant="secondary"
+              size="sm"
               aria-label={key === "del" ? "Delete digit" : `Digit ${key}`}
               onClick={() => {
                 const next = key === "del" ? valueRef.current.slice(0, -1) : (valueRef.current + key).slice(0, length);
                 valueRef.current = next;
                 onChange(next);
               }}
-              className="h-12 rounded-lg border border-line-strong text-[15px] hover:bg-raised"
+              className="h-12"
             >
               {key === "del" ? "Del" : key}
-            </button>
+            </Button>
           ),
         )}
       </div>

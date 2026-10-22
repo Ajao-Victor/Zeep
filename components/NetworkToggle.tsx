@@ -1,5 +1,11 @@
 import type { Network } from "@/lib/config";
-import { cx } from "@/lib/cx";
+import { Toggle, type ToggleOption } from "@/components/ui/Toggle";
+
+// Testnet takes the warn tint, matching the header's testnet badge.
+const NETWORKS: ToggleOption<Network>[] = [
+  { value: "testnet", label: "Testnet", tint: "warn" },
+  { value: "mainnet", label: "Mainnet", tint: "gold" },
+];
 
 export function NetworkToggle({
   network,
@@ -10,23 +16,5 @@ export function NetworkToggle({
   onChange: (network: Network) => void;
   disabled?: boolean;
 }) {
-  return (
-    <div className="flex shrink-0 overflow-hidden rounded-lg border border-line-strong text-[12px] sm:text-[12.5px]" role="group" aria-label="Network">
-      {(["testnet", "mainnet"] as const).map((item) => (
-        <button
-          key={item}
-          type="button"
-          disabled={disabled}
-          aria-pressed={network === item}
-          onClick={() => onChange(item)}
-          className={cx(
-            "whitespace-nowrap px-2 py-1.5 transition-colors duration-150 disabled:opacity-50 sm:px-3 sm:py-[7px]",
-            network === item ? "bg-raised text-gold" : "text-muted hover:bg-line-strong hover:text-text",
-          )}
-        >
-          {item === "testnet" ? "Testnet" : "Mainnet"}
-        </button>
-      ))}
-    </div>
-  );
+  return <Toggle options={NETWORKS} value={network} onChange={onChange} label="Network" size="sm" disabled={disabled} />;
 }
