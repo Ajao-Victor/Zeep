@@ -10,6 +10,7 @@ import { fileKind } from "@/lib/chat/files";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Textarea } from "@/components/ui/Input";
+import { MenuContent, MenuNote, MenuRadioItem } from "@/components/ui/Menu";
 
 export function Composer({
   value,
@@ -123,17 +124,22 @@ export function Composer({
           }}
         />
         <DropdownMenu.Root>
-          <DropdownMenu.Trigger className="min-w-0 truncate rounded-lg border border-line px-3 py-2 text-[13px] text-muted hover:bg-raised">
-            {model?.name ?? "Model"}
+          <DropdownMenu.Trigger asChild>
+            <Button variant="secondary" size="sm" className="min-w-0 max-w-56 gap-2">
+              <span className="min-w-0 truncate">{model?.name ?? "Model"}</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="shrink-0 text-muted">
+                <path d="M2 6.5 5 3.5l3 3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Button>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content className="z-50 max-h-80 w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-line bg-surface p-1" side="top" align="start">
+          <MenuContent side="top" align="start">
+            <DropdownMenu.RadioGroup value={model?.id ?? ""} onValueChange={onModel}>
               {(prices?.models ?? []).map((item) => (
-                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} zecUsd={prices?.zec_usd ?? 0} onPick={() => onModel(item.id)} />
+                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} zecUsd={prices?.zec_usd ?? 0} />
               ))}
-              <p className="px-3 py-2 text-[12px] leading-relaxed text-faint">Attachments over 64 KB add {perMb} cr per MB.</p>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
+            </DropdownMenu.RadioGroup>
+            <MenuNote>Attachments over 64 KB add {perMb} cr per MB.</MenuNote>
+          </MenuContent>
         </DropdownMenu.Root>
         <Button size="sm" disabled={busy} onClick={onSend} className="ml-auto">
           {busy ? "Proving…" : "Send"}
@@ -143,10 +149,10 @@ export function Composer({
   );
 }
 
-function ModelRow({ item, perCredit, zecUsd, onPick }: { item: PriceModel; perCredit: number; zecUsd: number; onPick: () => void }) {
+function ModelRow({ item, perCredit, zecUsd }: { item: PriceModel; perCredit: number; zecUsd: number }) {
   const zats = !zecUsd || item.micro_usd <= 0 ? 0n : BigInt(Math.floor((item.micro_usd / 1e6 / zecUsd) * 1e8));
   return (
-    <DropdownMenu.Item onSelect={onPick} className="cursor-pointer rounded-md px-3 py-2 outline-none data-[highlighted]:bg-raised">
+    <MenuRadioItem value={item.id}>
       <span className="flex items-center justify-between gap-3">
         <span className="min-w-0">
           <span className="block truncate text-[14px]">{item.name}</span>
@@ -164,7 +170,7 @@ function ModelRow({ item, perCredit, zecUsd, onPick }: { item: PriceModel; perCr
           </Tooltip.Root>
         </Tooltip.Provider>
       </span>
-    </DropdownMenu.Item>
+    </MenuRadioItem>
   );
 }
 
