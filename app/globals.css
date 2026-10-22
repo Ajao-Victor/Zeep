@@ -142,3 +142,24 @@ body {
     backdrop-filter: none;
   }
 }
+
+/* A 1px lit top edge, drawn as a masked ring. The element must be positioned
+   (relative, sticky, fixed or absolute); the utility doesn't set position so it can't override one. */
+@utility glass-edge {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--glass-edge);
+    pointer-events: none;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+}
