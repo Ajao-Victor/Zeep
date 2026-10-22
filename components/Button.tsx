@@ -12,16 +12,23 @@ const variants = {
   danger: "tint-danger border border-(--tint) text-(--tint) not-disabled:hover:bg-line-strong",
 };
 
+const sizes = {
+  md: "px-[18px] py-3 text-[15px]",
+  sm: "px-3 py-2 text-[14px]",
+};
+
 type Props = {
   variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
   href?: string;
   children: ReactNode;
   className?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function Button({ variant = "primary", href, children, className, type = "button", ...props }: Props) {
+export function Button({ variant = "primary", size = "md", href, children, className, type = "button", ...props }: Props) {
   const classes = cx(
-    "relative inline-flex items-center justify-center rounded-lg px-[18px] py-3 text-[15px] font-medium",
+    "relative inline-flex items-center justify-center rounded-lg font-medium",
+    sizes[size],
     "transition-[background-color,border-color,box-shadow,color,translate] duration-(--dur-quick) ease-enter",
     "motion-safe:not-disabled:hover:-translate-y-px not-disabled:active:duration-(--dur-instant) motion-safe:not-disabled:active:translate-y-0",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
