@@ -164,14 +164,14 @@ Motion has three registers. Each screen picks one, and only the signature moment
 | `--dur-base` | 240 ms | Menus, tooltips, small layout changes |
 | `--dur-slow` | 420 ms | Panels, modals, route content |
 | `--dur-cinematic` | 900 ms+ | Signature moments |
-| `--ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Default for entering (expo-out) |
-| `--ease-in-out` | `cubic-bezier(0.65, 0, 0.35, 1)` | Moving between two places |
-| `--ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Leaving (always shorter than entering) |
+| `--curve-enter` → `ease-enter` | `cubic-bezier(0.16, 1, 0.3, 1)` | Default for entering (expo-out) |
+| `--curve-move` → `ease-move` | `cubic-bezier(0.65, 0, 0.35, 1)` | Moving between two places |
+| `--curve-exit` → `ease-exit` | `cubic-bezier(0.7, 0, 0.84, 0)` | Leaving (always shorter than entering) |
 | `spring.snappy` | stiffness 500, damping 38 | Toggles, chips, the PIN dots |
 | `spring.weighty` | stiffness 220, damping 28, mass 1.2 | Panels, the vault door, cards |
 | `spring.float` | stiffness 60, damping 14 | Ambient drift in scenes |
 
-The CSS values live in `styles/tokens.css`. The spring presets live in `lib/motion/tokens.ts`, shared by Motion (DOM) and the 3D scenes, so DOM and WebGL move with the same physics.
+The CSS values live in `styles/tokens.css` (shipped). Curves are named `--curve-*` and exposed as the Tailwind utilities `ease-enter`, `ease-move` and `ease-exit`, because Tailwind v4 already owns `--ease-out`, `--ease-in` and `--ease-in-out`. Durations are used as `duration-(--dur-base)`. Under reduced motion, `--dur-slow` and `--dur-cinematic` drop to 150 ms. The spring presets live in `lib/motion/tokens.ts`, shared by Motion (DOM) and the 3D scenes, so DOM and WebGL move with the same physics.
 
 ### Choreography rules
 
