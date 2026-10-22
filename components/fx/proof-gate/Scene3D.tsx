@@ -22,6 +22,7 @@ type Props = {
   onCross: (crossed: number) => void;
   onFps: (fps: number) => void;
   onLost: () => void;
+  onReady: () => void;
 };
 
 /** Reflections for the gold metal, generated in code: no HDRI file to fetch. */
@@ -42,7 +43,7 @@ function Environment() {
   return null;
 }
 
-function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | "onLost">) {
+function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | "onLost" | "onReady">) {
   const { viewport, gl } = useThree();
   const { width: vw, height: vh } = viewport;
   const px = vh / layout.height;
@@ -146,7 +147,7 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
 }
 
 /** Tiers 2 and 3: the WebGL Proof Gate. Loaded on demand; never imported by app routes. */
-export default function Scene3D({ layout, tier, active, source, onCross, onFps, onLost }: Props) {
+export default function Scene3D({ layout, tier, active, source, onCross, onFps, onLost, onReady }: Props) {
   return (
     <div aria-hidden="true" style={{ width: layout.width, height: layout.height }}>
       <Canvas
@@ -164,6 +165,7 @@ export default function Scene3D({ layout, tier, active, source, onCross, onFps, 
             },
             { once: true },
           );
+          onReady();
         }}
       >
         <ambientLight intensity={0.3} />
