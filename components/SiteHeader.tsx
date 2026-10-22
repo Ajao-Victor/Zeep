@@ -11,6 +11,7 @@ import { NetworkToggle } from "@/components/NetworkToggle";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { useVault } from "@/components/VaultState";
 import { Button } from "@/components/Button";
+import { IconButton } from "@/components/ui/IconButton";
 
 const PUBLIC = [
   { href: "/services", label: "Services" },
@@ -100,17 +101,13 @@ export function SiteHeader() {
         </Link>
         <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <Dialog.Trigger asChild>
-            <button
-              type="button"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line-strong text-text lg:hidden"
-              aria-label="Open menu"
-            >
+            <IconButton variant="glass" label="Open menu" className="lg:hidden">
               <span className="flex w-3.5 flex-col gap-[3px]" aria-hidden="true">
                 <span className="h-px bg-current" />
                 <span className="h-px bg-current" />
                 <span className="h-px bg-current" />
               </span>
-            </button>
+            </IconButton>
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 z-40 bg-black/70" />
