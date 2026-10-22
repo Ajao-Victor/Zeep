@@ -195,3 +195,49 @@ body {
     }
   }
 }
+
+/* Popover entry and exit for Radix menus and popovers, grown from the trigger
+   (Radix sets --radix-popper-transform-origin and data-state; it waits for the exit animation). */
+@keyframes zeep-pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@keyframes zeep-pop-out {
+  to {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+@keyframes zeep-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes zeep-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@utility pop-in {
+  transform-origin: var(--radix-popper-transform-origin);
+  &[data-state="open"] {
+    animation: zeep-pop-in var(--dur-base) var(--curve-enter);
+  }
+  &[data-state="closed"] {
+    animation: zeep-pop-out var(--dur-quick) var(--curve-exit) forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state="open"] {
+      animation-name: zeep-fade-in;
+    }
+    &[data-state="closed"] {
+      animation-name: zeep-fade-out;
+    }
+  }
+}
