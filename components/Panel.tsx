@@ -1,27 +1,10 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cx } from "@/lib/cx";
+import { Surface } from "@/components/ui/Surface";
 
-export function Panel({
-  children,
-  className,
-  padding = "panel",
-}: {
-  children: ReactNode;
-  className?: string;
-  padding?: "panel" | "card" | "none";
-}) {
-  return (
-    <section
-      className={cx(
-        "rounded-xl border border-line bg-surface",
-        padding === "panel" && "p-5 sm:p-7",
-        padding === "card" && "p-5",
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
+/** The app's standard panel: a glass Surface. Kept so existing screens migrate without edits. */
+export function Panel(props: ComponentProps<typeof Surface>) {
+  return <Surface {...props} />;
 }
 
 export function Page({
