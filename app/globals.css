@@ -166,3 +166,30 @@ body {
       linear-gradient(#000 0 0);
   }
 }
+
+/* A light sweep across the element on hover (700ms, one way). Needs a positioned element;
+   uses ::after so it can sit alongside glass-edge. Off when disabled or under reduced motion. */
+@utility sheen {
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 60%;
+    background: linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.32) 50%, transparent 80%);
+    translate: -120% 0;
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    &:hover:not(:disabled)::after {
+      translate: 220% 0;
+      transition: translate 700ms var(--curve-move);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      display: none;
+    }
+  }
+}
