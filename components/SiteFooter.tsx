@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { config } from "@/lib/config";
 
 export function SiteFooter() {
@@ -14,7 +15,9 @@ export function SiteFooter() {
           ) : (
             <span>Open source</span>
           )}
-          <span>Public reserve</span>
+          <Link href="/reserve" className="hover:text-text">
+            Public reserve
+          </Link>
           <span className="font-mono">{sha}</span>
         </span>
       </div>

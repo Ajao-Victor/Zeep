@@ -14,7 +14,7 @@ import { useVault } from "@/components/VaultState";
 const PUBLIC = [
   { href: "/services", label: "Services" },
   { href: "/#how", label: "How it works" },
-  { href: "/reserve", label: "Refunds" },
+  { href: "/credits", label: "Refunds" },
   { href: "/#faq", label: "FAQ" },
 ];
 
