@@ -30,6 +30,9 @@
   --shadow-elev-1: var(--elev-1);
   --shadow-elev-2: var(--elev-2);
   --shadow-elev-gold: var(--elev-gold);
+  --ease-enter: var(--curve-enter);
+  --ease-move: var(--curve-move);
+  --ease-exit: var(--curve-exit);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }

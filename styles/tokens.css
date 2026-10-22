@@ -49,4 +49,9 @@
   --dur-base: 240ms;
   --dur-slow: 420ms;
   --dur-cinematic: 900ms;
+
+  /* Motion curves: enter (expo-out), move between two places, exit (always shorter than enter). */
+  --curve-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --curve-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --curve-exit: cubic-bezier(0.7, 0, 0.84, 0);
 }
