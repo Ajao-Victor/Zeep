@@ -41,6 +41,8 @@ export function Gate({ x, y, r, energy }: { x: number; y: number; r: number; ene
   const tilted = useRef<THREE.Mesh>(null);
   const bars = useRef<THREE.InstancedMesh>(null);
   const metal = useRef<THREE.MeshStandardMaterial>(null);
+  const horizon = useRef<THREE.ShaderMaterial>(null);
+  // Initial values only: R3F copies each uniform into the material, so updates go through `horizon`.
   const uniforms = useMemo(() => ({ uTime: { value: 0 }, uEnergy: { value: 0 }, uGold: { value: new THREE.Color(GOLD) } }), []);
 
   useLayoutEffect(() => {
@@ -61,8 +63,11 @@ export function Gate({ x, y, r, energy }: { x: number; y: number; r: number; ene
 
   useFrame((state, delta) => {
     const level = energy.current ?? 0;
-    uniforms.uTime.value = state.clock.elapsedTime;
-    uniforms.uEnergy.value = level;
+    const live = horizon.current?.uniforms;
+    if (live) {
+      live.uTime.value = state.clock.elapsedTime;
+      live.uEnergy.value = level;
+    }
     if (group.current) group.current.rotation.z += delta * 0.08;
     if (tilted.current) tilted.current.rotation.y += delta * 0.35;
     if (metal.current) metal.current.emissiveIntensity = 0.12 + level * 0.55;
@@ -87,6 +92,7 @@ export function Gate({ x, y, r, energy }: { x: number; y: number; r: number; ene
       <mesh position={[0, 0, -0.01]}>
         <circleGeometry args={[r * 0.96, 96]} />
         <shaderMaterial
+          ref={horizon}
           uniforms={uniforms}
           vertexShader={horizonVertex}
           fragmentShader={horizonFragment}

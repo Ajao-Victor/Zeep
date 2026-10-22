@@ -143,6 +143,8 @@ export function Particles({
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
+  // Initial values only: R3F copies each uniform into the material, so per-frame updates go
+  // through the material refs below.
   const layers = useMemo(
     () =>
       Array.from({ length: echoes + 1 }, (_, layer) => ({
@@ -167,12 +169,15 @@ export function Particles({
     [echoes],
   );
 
+  const materials = useRef<(THREE.ShaderMaterial | null)[]>([]);
   const last = useRef(-1);
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
     const { x, y, on } = pointer.current ?? { x: 0, y: 0, on: 0 };
-    for (const uniforms of layers) {
+    for (const material of materials.current) {
+      if (!material) continue;
+      const uniforms = material.uniforms;
       uniforms.uTime.value = time;
       uniforms.uStartX.value = flow.startX;
       uniforms.uEndX.value = flow.endX;
@@ -207,6 +212,9 @@ export function Particles({
       {layers.map((uniforms, layer) => (
         <points key={layer} geometry={geometry} frustumCulled={false} renderOrder={2 - layer}>
           <shaderMaterial
+            ref={(material) => {
+              materials.current[layer] = material;
+            }}
             uniforms={uniforms}
             vertexShader={vertex}
             fragmentShader={fragment}
