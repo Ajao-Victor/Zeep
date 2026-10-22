@@ -86,6 +86,9 @@ export function Reauth({
           onChange={(event) => setPhrase(event.target.value)}
           rows={3}
           autoComplete="off"
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="none"
           className="mt-1"
         />
       </label>

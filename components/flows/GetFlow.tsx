@@ -144,6 +144,7 @@ export function GetFlow() {
                 <TextField
                   key={number}
                   label={`Word ${number}`}
+                  secret
                   invalid={Boolean(error) && answers[index]?.trim().toLowerCase() !== words[number - 1]}
                   value={answers[index] ?? ""}
                   onChange={(value) => setAnswers((current) => {

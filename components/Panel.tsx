@@ -59,6 +59,7 @@ export function TextField({
   placeholder,
   autoComplete = "off",
   invalid = false,
+  secret = false,
 }: {
   label: string;
   value: string;
@@ -66,6 +67,8 @@ export function TextField({
   placeholder?: string;
   autoComplete?: string;
   invalid?: boolean;
+  /** Recovery words: no spellcheck, autocorrect or autocapitalise, which can send text off the device. */
+  secret?: boolean;
 }) {
   return (
     <label className="block text-[13px] text-muted">
@@ -75,6 +78,9 @@ export function TextField({
         autoComplete={autoComplete}
         placeholder={placeholder}
         invalid={invalid}
+        spellCheck={secret ? false : undefined}
+        autoCorrect={secret ? "off" : undefined}
+        autoCapitalize={secret ? "none" : undefined}
         onChange={(event) => onChange(event.target.value)}
         className="mt-1.5"
       />
