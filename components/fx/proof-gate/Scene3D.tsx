@@ -4,14 +4,15 @@ import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { Bokeh } from "@/components/fx/proof-gate/Bokeh";
 import { Gate } from "@/components/fx/proof-gate/Gate";
 import { Lanes } from "@/components/fx/proof-gate/Lanes";
 import { Particles, type Flow, type Pointer } from "@/components/fx/proof-gate/Particles";
 import type { SceneLayout } from "@/components/fx/proof-gate/layout";
 
 const QUALITY = {
-  2: { count: 1400, echoes: 0, dpr: [1, 1.5] as [number, number] },
-  3: { count: 4200, echoes: 2, dpr: [1, 2] as [number, number] },
+  2: { count: 1400, echoes: 0, bokeh: 16, dpr: [1, 1.5] as [number, number] },
+  3: { count: 4200, echoes: 2, bokeh: 28, dpr: [1, 2] as [number, number] },
 };
 
 type Props = {
@@ -139,6 +140,7 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
   const quality = QUALITY[tier];
   return (
     <>
+      <Bokeh flow={flow} count={quality.bokeh} />
       <Lanes lanes={flow.lanes} start={flow.laneStart} end={flow.endX} px={px} />
       <Particles flow={flow} count={quality.count} echoes={quality.echoes} pointer={pointer} onCross={onCross} />
       <Gate x={flow.gateX} y={flow.gateY} r={flow.gateR} energy={energy} />
