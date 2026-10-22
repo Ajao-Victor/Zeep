@@ -92,7 +92,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-1.5 px-4 sm:gap-6 sm:px-8 lg:gap-8">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-2 px-4 sm:gap-6 sm:px-8 lg:gap-8">
         <Link href="/" aria-label={config.appName} className="flex shrink-0 items-center gap-2.5 text-[18px] font-semibold tracking-[-0.02em]">
           <span className="grid h-[22px] w-[22px] place-items-center rounded-md border-[1.5px] border-gold text-[12px] text-gold">
             Z
@@ -152,6 +152,16 @@ export function SiteHeader() {
                         {label}
                       </Link>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setSignOutOpen(true);
+                      }}
+                      className="rounded-lg px-3 py-3 text-left text-muted hover:bg-raised hover:text-text"
+                    >
+                      Sign out
+                    </button>
                   </>
                 ) : null}
               </nav>
@@ -182,7 +192,7 @@ export function SiteHeader() {
         </Tooltip.Provider>
         <NetworkToggle network={view.network} onChange={(network) => void chooseNetwork(network)} />
         {view.status === "unlocked" ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-1">
             <Tooltip.Provider delayDuration={200}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -199,12 +209,24 @@ export function SiteHeader() {
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-            <button type="button" onClick={() => void lock()} className="shrink-0 text-[14px] text-muted hover:text-text">
+            <IconButton label="Lock" className="md:hidden" onClick={() => void lock()}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </IconButton>
+            <IconButton label="Sign out" className="max-[359px]:hidden md:hidden" onClick={() => setSignOutOpen(true)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6.5 2.5h-3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M10 5l3 3-3 3M13 8H6.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </IconButton>
+            <Button variant="ghost" size="sm" className="shrink-0 whitespace-nowrap max-md:hidden" onClick={() => void lock()}>
               Lock
-            </button>
-            <button type="button" onClick={() => setSignOutOpen(true)} className="shrink-0 text-[14px] text-muted hover:text-text">
+            </Button>
+            <Button variant="ghost" size="sm" className="shrink-0 whitespace-nowrap max-md:hidden" onClick={() => setSignOutOpen(true)}>
               Sign out
-            </button>
+            </Button>
           </div>
         ) : (
           <Button href="/get" size="sm" className="shrink-0 whitespace-nowrap leading-none">
