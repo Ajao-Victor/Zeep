@@ -89,7 +89,7 @@ Tokens stay in `styles/tokens.css` and are exposed to Tailwind through `@theme i
 | `--line-strong` | `#312F2A` | Secondary button borders | — |
 | `--text` | `#EEEAE3` | Primary text | Slightly brighter |
 | `--muted` | `#8C877D` | Secondary text (≈5.4:1 on `--bg`) | — |
-| `--faint` | `#827D73` | Hints (≥4.5:1 on `--bg`; verify with a checker) | **Raised** from `#6F6B62` (AA fix) |
+| `--faint` | `#87827A` | Hints: 5.03:1 on `--bg`, 4.79:1 on `--surface`, 4.51:1 on `--raised` | **Raised** from `#6F6B62` (AA fix, shipped). `#827D73` was rejected: 4.47:1 on `--surface` |
 | `--gold` | `#D9A441` | Primary actions, the balance, the proof | — |
 | `--gold-hover` | `#E6B656` | Gold hover | — |
 | `--gold-deep` | `#8F6418` | Shadow side of gold surfaces and lattice edges | New |
