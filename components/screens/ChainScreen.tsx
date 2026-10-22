@@ -8,6 +8,8 @@ import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { Toggle } from "@/components/ui/Toggle";
 import { useVault } from "@/components/Providers";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 
 export function ChainScreen() {
   const { view } = useVault();
@@ -18,6 +20,7 @@ export function ChainScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
   const price = view.prices?.routes.rpc100.micro_usd;
 
   async function call() {
@@ -28,12 +31,8 @@ export function ChainScreen() {
     setFunds(false);
     try {
       const parsed = JSON.parse(params) as unknown;
-      const body = await payJson<unknown>(
-        session.client,
-        "POST",
-        `/v1/rpc/${chain}`,
-        { jsonrpc: "2.0", id: 1, method, params: parsed },
-        BigInt(price),
+      const body = await forge.track(() =>
+        payJson<unknown>(session.client, "POST", `/v1/rpc/${chain}`, { jsonrpc: "2.0", id: 1, method, params: parsed }, BigInt(price)),
       );
       setText(JSON.stringify(body, null, 2));
     } catch (cause) {
@@ -60,7 +59,7 @@ export function ChainScreen() {
           <TextField label="Params JSON" value={params} onChange={setParams} />
         </div>
         <div className="mt-4">
-          <Button disabled={busy || price === undefined} onClick={() => void call()}>{busy ? "Proving…" : "Call"}</Button>
+          <ProofButton phase={forge.phase} label="Call" settledLabel="Answered" disabled={busy || price === undefined} onClick={() => void call()} />
         </div>
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
