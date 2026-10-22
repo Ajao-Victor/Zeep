@@ -134,7 +134,9 @@ Glass rules:
 | Numeric | JetBrains Mono | 13–64 | **Always `font-variant-numeric: tabular-nums`**, so animated counters don't jitter |
 | Label | JetBrains Mono | 11–12, uppercase, tracking `0.08em` | Kickers, step numbers, proof IDs |
 
-Both faces stay self-hosted through `next/font` (`font-src 'self'`). **Open decision:** whether to add a single display face (for example Geist or Space Grotesk, loaded the same way) for the hero and section headings. The recommendation is to start with Inter's optical sizes and add a face only if the hero lacks character after the 3D work lands.
+Inter and JetBrains Mono load through `next/font/google`, which downloads them at build time and serves them from this origin, so browsers never contact Google (`font-src 'self'` holds).
+
+**Display face (ruled Oct 22).** Whether to add one is still open. Start with Inter's optical sizes, and add a face only if the hero lacks character after the 3D work lands. **If one is added, its font files must be committed to the repo** (for example `app/fonts/<Family>-Variable.woff2`) and loaded with `next/font/local`. No `next/font/google`, no `<link>` to Google Fonts or any other font host, and no CSS `@import` from another origin. Check the licence (OFL or similar) allows self-hosting and commit it next to the files. Optional follow-up: vendor Inter and JetBrains Mono the same way, so builds don't depend on reaching Google either.
 
 ### Layout, radius and layers
 
@@ -547,7 +549,7 @@ Each bullet is roughly one commit. Every phase leaves the site shippable, and th
 
 | # | Decision | Recommendation |
 | --- | --- | --- |
-| 1 | Add a display typeface? | Start with Inter's optical sizes. Add one face only if the hero needs more character |
+| 1 | Add a display typeface? | Start with Inter's optical sizes. **Ruled:** if one is added, its files are committed and loaded with `next/font/local`, never from Google or another host (section 3) |
 | 2 | Copy button for the recovery phrase? | **Ruled: no.** Write it down by hand (section 8) |
 | 3 | Smooth scrolling (Lenis) on marketing pages? | Yes on desktop, off on touch and under reduced motion |
 | 4 | A WebGL version of the Vault Door at T3? | Not at first. Revisit after Phase 4 if the CSS version feels flat |
