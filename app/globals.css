@@ -103,3 +103,9 @@ body {
     transform: none;
   }
 }
+
+/* State tint: identity (tint-id-1..6) → proof (tint-gold) → anonymous (tint-anon).
+   Children read var(--tint), e.g. border-(--tint) or text-(--tint). */
+@utility tint-* {
+  --tint: --value(--color-*);
+}
