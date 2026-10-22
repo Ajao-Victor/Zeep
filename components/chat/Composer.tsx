@@ -9,6 +9,7 @@ import type { Attachment } from "@/lib/chat/types";
 import { fileKind } from "@/lib/chat/files";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
+import { Textarea } from "@/components/ui/Input";
 
 export function Composer({
   value,
@@ -44,7 +45,8 @@ export function Composer({
     const box = boxRef.current;
     if (!box) return;
     box.style.height = "auto";
-    box.style.height = `${Math.min(box.scrollHeight, 160)}px`;
+    // scrollHeight excludes the border; add it back, since the box is border-box.
+    box.style.height = `${Math.min(box.scrollHeight + box.offsetHeight - box.clientHeight, 160)}px`;
   }
 
   function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -88,7 +90,7 @@ export function Composer({
           ))}
         </ul>
       ) : null}
-      <textarea
+      <Textarea
         ref={boxRef}
         value={value}
         rows={1}
@@ -99,7 +101,8 @@ export function Composer({
         onKeyDown={onKey}
         onPaste={onPaste}
         placeholder="Message"
-        className="max-h-40 w-full resize-none bg-transparent text-[15px] outline-none placeholder:text-faint"
+        aria-label="Message"
+        className="max-h-40"
       />
       {hint ? <p className="mt-1 text-[12px] text-warn">{hint}</p> : null}
       <div className="mt-2 flex items-center gap-2">
