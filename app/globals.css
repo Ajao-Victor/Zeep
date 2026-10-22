@@ -241,3 +241,274 @@ body {
     }
   }
 }
+
+/* The Forge (components/fx/Forge.tsx): the proof animation inside a ProofButton. data-phase follows
+   lib/fx/forge.ts: identity motes gather (preparing), converge into a spinning lattice on gold
+   (proving), a white mote is released (sending), white with a check (settled). Only opacity and
+   transform animate, so it composites off the main thread while the prover worker has the CPU. */
+.forge {
+  display: contents;
+}
+
+.forge-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--curve-move);
+}
+
+.forge-identity {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--id-1) 34%, transparent),
+      color-mix(in srgb, var(--id-2) 26%, transparent) 30%,
+      color-mix(in srgb, var(--id-3) 16%, transparent) 60%,
+      transparent 90%
+    ),
+    var(--raised);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.forge-gold {
+  overflow: hidden;
+  background: var(--gold);
+}
+
+/* Heat moving across the gold while the worker proves. */
+.forge-gold::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 50%;
+  background: linear-gradient(100deg, transparent, rgb(255 238 196 / 0.5), transparent);
+  transform: translateX(-100%);
+}
+
+.forge-white {
+  background: var(--anon);
+}
+
+.forge[data-phase="preparing"] .forge-identity,
+.forge[data-phase="proving"] .forge-gold,
+.forge[data-phase="sending"] .forge-gold,
+.forge[data-phase="settled"] .forge-white {
+  opacity: 1;
+}
+
+.forge[data-phase="proving"] .forge-gold::after {
+  animation: forge-heat 1.2s var(--curve-move) infinite;
+}
+
+.forge-content {
+  position: relative;
+  transition: color var(--dur-base) var(--curve-move);
+}
+
+.forge[data-phase="preparing"] .forge-content {
+  color: var(--text);
+}
+
+.forge[data-phase="failed"] .forge-content {
+  animation: forge-shake 360ms var(--curve-move);
+}
+
+.forge-glyph {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.forge-glyph > * {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+.forge-orbit {
+  width: 14px;
+  height: 14px;
+}
+
+.forge[data-phase="preparing"] .forge-orbit {
+  animation: forge-spin 2.4s linear infinite;
+}
+
+.forge-mote {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--mote);
+  opacity: 0;
+  transform: translateX(-16px) rotate(var(--angle)) translateX(9px) scale(0.6);
+  transition:
+    transform var(--dur-slow) var(--curve-enter) var(--delay),
+    opacity var(--dur-base) linear var(--delay);
+}
+
+.forge[data-phase="preparing"] .forge-mote {
+  opacity: 1;
+  transform: translateX(0) rotate(var(--angle)) translateX(7px) scale(1);
+}
+
+.forge[data-phase="proving"] .forge-mote {
+  opacity: 0;
+  transform: translateX(0) rotate(calc(var(--angle) + 120deg)) translateX(0) scale(0.3);
+  transition-duration: var(--dur-base);
+  transition-delay: 0ms;
+}
+
+.forge-glow {
+  width: 22px;
+  height: 22px;
+  margin: -4px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 244 214 / 0.9), transparent);
+  opacity: 0;
+  transition: opacity var(--dur-base) linear;
+}
+
+.forge[data-phase="proving"] .forge-glow {
+  opacity: 0.6;
+  animation: forge-glow 1.2s ease-in-out infinite alternate;
+}
+
+.forge-lattice {
+  color: var(--on-gold);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--dur-base) linear,
+    transform var(--dur-base) var(--curve-enter);
+}
+
+.forge[data-phase="proving"] .forge-lattice {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.forge[data-phase="proving"] .forge-lattice svg {
+  animation: forge-spin 1.2s linear infinite;
+}
+
+.forge[data-phase="sending"] .forge-lattice {
+  transform: scale(0.15);
+}
+
+.forge-spark,
+.forge-wait {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--anon);
+  box-shadow: 0 0 6px 2px var(--anon-glow);
+  opacity: 0;
+}
+
+.forge[data-phase="sending"] .forge-spark {
+  animation: forge-release 700ms var(--curve-enter) forwards;
+}
+
+/* The request is in flight after the mote left: a quiet white breath until the answer. */
+.forge[data-phase="sending"] .forge-wait {
+  animation: forge-breathe 1.6s ease-in-out 650ms infinite;
+}
+
+.forge-check {
+  color: var(--on-gold);
+  opacity: 0;
+  transition: opacity var(--dur-quick) linear;
+}
+
+.forge-check path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.forge[data-phase="settled"] .forge-check {
+  opacity: 1;
+}
+
+.forge[data-phase="settled"] .forge-check path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--dur-slow) var(--curve-enter) 80ms;
+}
+
+@keyframes forge-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes forge-heat {
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes forge-glow {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+
+@keyframes forge-release {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+    transform: translateX(0) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(160px) scale(0.8);
+  }
+}
+
+@keyframes forge-breathe {
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes forge-shake {
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+/* Reduced motion: no spin, travel or shake. The phases still cross-fade, so the colour story and
+   the labels carry the state; the lattice and the waiting dot stay still. */
+@media (prefers-reduced-motion: reduce) {
+  .forge *,
+  .forge *::after {
+    animation: none !important;
+    transition-property: opacity, color !important;
+  }
+
+  .forge[data-phase="sending"] .forge-wait {
+    opacity: 0.85;
+  }
+
+  .forge-check path {
+    stroke-dashoffset: 0;
+  }
+}
