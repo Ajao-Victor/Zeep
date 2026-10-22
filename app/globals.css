@@ -245,7 +245,9 @@ body {
 /* The Forge (components/fx/Forge.tsx): the proof animation inside a ProofButton. data-phase follows
    lib/fx/forge.ts: identity motes gather (preparing), converge into a spinning lattice on gold
    (proving), a white mote is released (sending), white with a check (settled). Only opacity and
-   transform animate, so it composites off the main thread while the prover worker has the CPU. */
+   transform animate, so it composites off the main thread while the prover worker has the CPU.
+   The loops that run during a proof tick in steps (10 changes a second) instead of gliding: the
+   compositor then draws 10 frames a second rather than 60, which leaves the cores to the prover. */
 .forge {
   display: contents;
 }
@@ -273,19 +275,7 @@ body {
 }
 
 .forge-gold {
-  overflow: hidden;
-  background: var(--gold);
-}
-
-/* Heat moving across the gold while the worker proves. */
-.forge-gold::after {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  width: 50%;
-  background: linear-gradient(100deg, transparent, rgb(255 238 196 / 0.5), transparent);
-  transform: translateX(-100%);
+  background: radial-gradient(90% 160% at 28px 50%, var(--gold-hover), var(--gold) 60%);
 }
 
 .forge-white {
@@ -297,10 +287,6 @@ body {
 .forge[data-phase="sending"] .forge-gold,
 .forge[data-phase="settled"] .forge-white {
   opacity: 1;
-}
-
-.forge[data-phase="proving"] .forge-gold::after {
-  animation: forge-heat 1.2s var(--curve-move) infinite;
 }
 
 .forge-content {
@@ -335,7 +321,7 @@ body {
 }
 
 .forge[data-phase="preparing"] .forge-orbit {
-  animation: forge-spin 2.4s linear infinite;
+  animation: forge-spin 2.4s steps(24) infinite;
 }
 
 .forge-mote {
@@ -377,7 +363,6 @@ body {
 
 .forge[data-phase="proving"] .forge-glow {
   opacity: 0.6;
-  animation: forge-glow 1.2s ease-in-out infinite alternate;
 }
 
 .forge-lattice {
@@ -394,8 +379,9 @@ body {
   transform: scale(1);
 }
 
+/* A ratchet: 15° a tick, a full turn every 2.4 s. */
 .forge[data-phase="proving"] .forge-lattice svg {
-  animation: forge-spin 1.2s linear infinite;
+  animation: forge-spin 2.4s steps(24) infinite;
 }
 
 .forge[data-phase="sending"] .forge-lattice {
@@ -447,21 +433,6 @@ body {
   }
 }
 
-@keyframes forge-heat {
-  to {
-    transform: translateX(300%);
-  }
-}
-
-@keyframes forge-glow {
-  from {
-    opacity: 0.35;
-  }
-  to {
-    opacity: 0.9;
-  }
-}
-
 @keyframes forge-release {
   0% {
     opacity: 0;
@@ -498,8 +469,7 @@ body {
 /* Reduced motion: no spin, travel or shake. The phases still cross-fade, so the colour story and
    the labels carry the state; the lattice and the waiting dot stay still. */
 @media (prefers-reduced-motion: reduce) {
-  .forge *,
-  .forge *::after {
+  .forge * {
     animation: none !important;
     transition-property: opacity, color !important;
   }
