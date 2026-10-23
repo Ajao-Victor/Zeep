@@ -413,7 +413,7 @@ The example file uses localhost. On the live project, set:
 | `NEXT_PUBLIC_AUTOLOCK_SEC` | `300` | Lock after five idle minutes |
 | `NEXT_PUBLIC_PASSKEY_RP_ID` | `zeep-frontend.vercel.app` | Passkey relying party. Hostname only |
 | `NEXT_PUBLIC_RECOVERY_WORDS` | `24` | Phrase length |
-| `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC` | `30` | Clear a copied phrase |
+| `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC` | `30` | Clipboard clear for `CopyField secret` (no field uses it; the phrase cannot be copied) |
 
 **Chat and content**
 
@@ -422,7 +422,7 @@ The example file uses localhost. On the live project, set:
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `20` | Attachment ceiling before prices load |
 | `NEXT_PUBLIC_CHAT_AUTODELETE_DEFAULT` | `false` | 30-day chat deletion |
 | `NEXT_PUBLIC_CHAT_SYNC_DEFAULT` | `false` | Sync ciphertext to the vault API |
-| `NEXT_PUBLIC_LANDING_ANIMATION` | `true` | Landing canvas |
+| `NEXT_PUBLIC_FX_LEVEL` | `auto` | Motion level: `auto` picks the Proof Gate tier per device, `lite` caps it at the 2D canvas, `off` shows the still poster and makes the Forge and the Vault Door cross-fade only. The older `NEXT_PUBLIC_LANDING_ANIMATION=false` still means `off` |
 | `NEXT_PUBLIC_SOURCE_URL` | the frontend repo | Footer link |
 | `NEXT_PUBLIC_DOCS_URL` | `https://zeep.app/docs` | Docs link |
 
