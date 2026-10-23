@@ -79,8 +79,25 @@ body {
   }
 }
 
+@keyframes zeep-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
 .zeep-pulse {
   animation: zeep-pulse 2.4s ease-in-out infinite;
+}
+
+/* One short shake, e.g. the PIN dots after a wrong PIN. */
+.zeep-shake {
+  animation: zeep-shake 360ms var(--curve-move);
 }
 
 .zeep-in {
@@ -102,7 +119,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .zeep-pulse,
-  .zeep-in {
+  .zeep-in,
+  .zeep-shake {
     animation: none;
   }
 
