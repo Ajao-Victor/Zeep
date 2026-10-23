@@ -60,8 +60,8 @@ export function PinPad({
   }, [onChange, length, locked]);
 
   return (
-    <div>
-      <div className={cx("flex gap-2", status === "error" && "zeep-shake")} aria-hidden="true">
+    <div className="w-full max-w-[240px]">
+      <div className={cx("flex justify-center gap-2", status === "error" && "zeep-shake")} aria-hidden="true">
         {Array.from({ length }, (_, index) => {
           const filled = index < value.length || status === "ok";
           return (
@@ -86,7 +86,7 @@ export function PinPad({
       <p className="sr-only" aria-live="polite">
         {value.length} of {length} PIN digits
       </p>
-      <div className="mt-4 grid max-w-[240px] grid-cols-3 gap-2" role="group" aria-label="PIN pad">
+      <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label="PIN pad">
         {KEYS.map((key) =>
           key === "empty" ? (
             <span key={key} />
