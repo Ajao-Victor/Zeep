@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { config, type Network } from "@/lib/config";
 import { formatCredits, formatUsd, formatZec, zatsToMicroUsd } from "@/lib/zeep";
 import type { PriceSheet } from "@/lib/zeep/prices";
+import { setDoorIntent, type DoorIntent } from "@/lib/fx/doorIntent";
 import { emit, readSession, subscribe } from "@/lib/vault/session";
 import { lockVault, readPrefs, switchNetwork, vaultStatus } from "@/lib/vault/vault";
 import { useToast } from "@/components/Toast";
@@ -26,7 +27,7 @@ export type VaultView = {
 
 const VaultContext = createContext<{
   view: VaultView;
-  lock: () => Promise<void>;
+  lock: (reason?: Exclude<DoorIntent["reason"], "switch">) => Promise<void>;
   chooseNetwork: (network: Network) => Promise<void>;
   refresh: () => Promise<void>;
 } | null>(null);
@@ -112,10 +113,15 @@ export function VaultState({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [view.status, view.network]);
 
-  const lock = useCallback(async () => {
-    await lockVault();
-    router.push("/unlock");
-  }, [router]);
+  // The session is cleared first; only then does /unlock play the Vault Door closing.
+  const lock = useCallback(
+    async (reason: Exclude<DoorIntent["reason"], "switch"> = "lock") => {
+      await lockVault();
+      setDoorIntent({ reason });
+      router.push("/unlock");
+    },
+    [router],
+  );
 
   const chooseNetwork = useCallback(
     async (network: Network) => {
