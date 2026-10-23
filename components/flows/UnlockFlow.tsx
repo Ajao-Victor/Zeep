@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { config } from "@/lib/config";
+import { cx } from "@/lib/cx";
 import { errorText } from "@/lib/format";
 import { clearDoorIntent, doorIntentText, peekDoorIntent } from "@/lib/fx/doorIntent";
 import { useVaultDoor } from "@/lib/fx/useVaultDoor";
@@ -150,7 +151,9 @@ export function UnlockFlow() {
           {error ? (
             <span className="text-danger">{error}</span>
           ) : (
-            <span className="text-muted">{busy || (intent && !pin ? doorIntentText(intent) : "")}</span>
+            <span className={cx(!busy && door.warn ? "text-warn" : "text-muted")}>
+              {busy || (door.warn ? "One try left. Another wrong PIN erases this vault." : intent && !pin ? doorIntentText(intent) : "")}
+            </span>
           )}
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
