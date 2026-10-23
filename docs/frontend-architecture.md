@@ -1,6 +1,6 @@
 # Zeep — Frontend Architecture (Vercel)
 
-Oct 21, 2026 · @0xAristos
+Oct 21, 2026 · @0xAristos · updated Oct 23, 2026 for the v2 design (Obsidian edition)
 
 ## Overview
 
@@ -13,15 +13,22 @@ The user has two private balances, and the app shows them as one number:
 
 **Credits** are the display of both together: dollars plus ZEC at the live price. The default is 1 credit = $1 (`micro_usd_per_credit` = 1,000,000). The header shows the total. The split appears only in the header tooltip and on the balance screen. The treasury (USDC, bridges, the EVM wallet) stays on the backend. None of it is named or called from this app.
 
-**Design direction: Vault.** A dark-first interface: near-black background, warm off-white text, one gold accent for actions and balances, and monospace numbers for anything counted. Panels have thin borders and no shadows, gradients, glow or emoji. The tone is a security tool.
+**Design direction: Vault, Obsidian edition.** A dark-first interface: near-black background, warm off-white text, one gold accent for actions and balances, and monospace numbers for anything counted. Depth comes from glass surfaces, a lit top edge and soft elevation, not from new hues. The tone is a security tool. Colour tells one story everywhere: things arrive in **identity colours** (six muted hues, used only before the proof), pass through **gold** (the proof) and leave **anonymous white**. The full specification is `docs/futuristic-design-spec.md`.
 
-**Landing page.** New visitors land on a page with one live element: an animated panel where coloured dots pass through a gold proof gate and leave as identical white dots routed to the five services. The dots move away from the cursor and the gate brightens on hover. The animation stops when the user prefers reduced motion.
+**Three signature moments** get the motion budget, and everything else stays quiet:
+
+- **The Proof Gate** (landing hero). A live three.js scene: coloured requests funnel into a rotating gold lattice and leave as white points along five lanes to the services. See "Motion and signature moments".
+- **The Forge** (every paid request). The Send/Search/Call/… button turns into a small gold forge driven by the real proof.
+- **The Vault Door** (create, unlock, lock, network switch). A CSS 3D door that turns while Argon2id derives the key and opens, seals or closes on the real outcome.
+
+**Landing page.** New visitors see the Proof Gate beside the hero, with a glass "What Zeep sees" panel over its lower part (labelled "simulated live"). Requests move away from the cursor, the camera tilts slightly with it and the gate pulses on click. The scene picks a quality tier per device and falls back to a 2D canvas or a still poster.
 
 **What the frontend must guarantee**
 
 - The recovery phrase, PIN and spend key never leave the device.
 - Testnet and mainnet are separate vaults. The toggle is always visible, and switching locks the current vault.
 - Each request's proof is built in a Web Worker so the UI stays responsive.
+- Motion tells the truth: the Forge and the Vault Door react only to real proof, key-derivation and vault events, never to timers, and no animation may slow the cryptography (see "Rules for contributors").
 - No third-party scripts, analytics or trackers.
 - The page is cross-origin isolated, so the in-app Zcash wallet can use threads.
 
@@ -41,7 +48,9 @@ Every library runs in the browser and is bundled at build time. Nothing is loade
 | Styling | Tailwind CSS v4, driven by the Vault tokens | One source of colours |
 | UI primitives | Radix UI (dialog, dropdown, tooltip, tabs) | Accessible behaviour without a visual style to fight |
 | Fonts | Inter and JetBrains Mono, self-hosted via `next/font` | No request to Google at runtime |
-| Landing animation | Plain `<canvas>` + `requestAnimationFrame` | Small; respects reduced motion |
+| Proof Gate (landing 3D) | `three` 0.186.1 + `@react-three/fiber` 9.8.2, exact pins | A lazy chunk (about 245 kB gzipped) fetched only on capable devices after first paint. Everything is generated in code: no models, textures, HDRIs, fonts or decoders to host. No drei, postprocessing or Motion (several drei helpers fetch from CDNs) |
+| Proof Gate fallbacks | 2D `<canvas>` (tier 1) and a seeded SVG poster (tier 0) | Weak devices, no hardware WebGL2, reduced motion, data saver or FX off |
+| The Forge and the Vault Door | Plain CSS (transforms, opacity, masks) driven by `data-phase` | No canvas, WebGL or JS frame loop, so they cost nothing next to the prover and Argon2id workers |
 | Spend proofs | `snarkjs` Groth16 in a Web Worker, `poseidon-lite` for note hashes | Same circuit the backend verifies |
 | PIN hardening | `hash-wasm` Argon2id | Memory-hard key derivation in the browser |
 | Encryption | WebCrypto AES-GCM (256-bit) | Note backups, the vault record, and chats |
@@ -54,7 +63,7 @@ Every library runs in the browser and is bundled at build time. Nothing is loade
 | Attachments | `pdfjs-dist` in its worker; images downscaled on a canvas | Files travel only inside the paid chat request |
 | API client | `fetch` + `zod` for public responses; the Zeep client for paid ones | OpenAI-style SSE for chat |
 | Server state | TanStack Query | Public data such as the reserve books |
-| Tests | Vitest | Units for credits, the deposit estimate, addresses, ZIP 321 and the phrase quiz |
+| Tests | Vitest | Units for credits, the deposit estimate, addresses, ZIP 321, the phrase quiz, motion-token drift, rendering tiers, and the Forge and Vault Door phase machines |
 
 ## Routes and screens
 
@@ -94,14 +103,22 @@ One accent, one border weight, two typefaces. Gold is used where the user acts o
 | `--line-strong` | `#2E2C28` | Secondary button borders |
 | `--text` | `#ECE8E1` | Primary text |
 | `--muted` | `#8C877D` | Secondary text |
-| `--faint` | `#6F6B62` | Hints |
+| `--faint` | `#87827A` | Hints (raised from `#6F6B62` to pass 4.5:1 on every surface) |
 | `--gold` | `#D9A441` | Primary buttons, credit total |
 | `--gold-hover` | `#E6B656` | Gold button hover |
 | `--ok` | `#9CB58A` | Confirmed states |
 | `--warn` | `#D98A41` | Testnet badge, shielding |
 | `--danger` | `#D06B5C` | Errors, a wiped vault |
+| `--void` | `#070706` | The space behind scenes and glass |
+| `--gold-deep`, `--gold-glow` | `#8F6418`, gold at 35% | Gold as a light source: ring shading, glows |
+| `--anon`, `--anon-glow` | `#F4F2EE`, at 22% | Anonymous white: only things that passed a proof |
+| `--id-1` … `--id-6` | six muted hues | Identity: before the proof only (scenes, the Forge's motes, the door's outer ring). Never UI chrome |
 
-Components use these tokens. A light theme can come later by redefining them.
+Also in `styles/tokens.css`: elevation (`--elev-1`, `--elev-2`, `--elev-gold`), glass (`--glass-1/2-fill`, `--glass-1/2-blur`, `--glass-edge`; the fills are the minimum opacity that keeps text AA and must not be lowered), and motion (`--dur-instant` 90 ms … `--dur-cinematic` 900 ms, `--curve-enter/move/exit`, with the slow durations capped under reduced motion). `lib/motion/tokens.ts` mirrors the durations and curves for JavaScript, and a test fails if the two drift. Components use these tokens. A light theme can come later by redefining them.
+
+**Utilities** (`app/globals.css`): `glass-1` and `glass-2` (with an opaque fallback and `prefers-reduced-transparency`), `glass-edge` (a lit top edge; needs a positioned element), `tint-*` (sets `--tint`, which the focus ring and tinted components read), `sheen` (the primary button's hover light), `pop-in` (menus) and `zeep-shake`.
+
+**Primitives** (`components/ui/` and `components/`): `Surface`/`Card` (`Panel` is an alias), `Button` (primary, secondary, ghost, danger; `busy` disables without dimming), `ProofButton` (hosts the Forge), `IconButton` (36 px visual, 44 px hit area), `Toggle` (segmented or chips), `Input`/`Textarea`, `Menu`, `PinPad`, and the effects in `components/fx/` (`VaultDoor`, `Forge`, `proof-gate/`).
 
 **Type.** Inter for text (60 / 32 / 17 / 15 / 14 / 13 px). JetBrains Mono for credits, ZEC, prices and addresses.
 
@@ -114,7 +131,55 @@ Components use these tokens. A light theme can come later by redefining them.
 - The main column is centered at a max of 768 px.
 - An empty thread says the proof shows the payment, not who you are, and that the history stays on the device. Once a chat exists, one faint line sits above the composer: "Zeep sees the prompt, not who sent it."
 
-**Motion.** Only the landing animation moves on its own. Buttons use a 150 ms colour change. The canvas pauses off-screen and draws a still frame when the user prefers reduced motion.
+**Motion.** Instrument UI stays under `--dur-base` (buttons lift 1 px and change colour in 150 ms). Only the three signature moments use long or looping motion, described in the next section. Everything honours `prefers-reduced-motion` and `NEXT_PUBLIC_FX_LEVEL=off`.
+
+## Motion and signature moments
+
+Each moment uses the lightest technology that can carry it. Only the landing page runs WebGL. App routes never load three.js.
+
+### The Proof Gate (landing, three.js)
+
+`components/landing/ProofGateHero.tsx` puts `components/fx/proof-gate/SceneFrame.tsx` behind the glass "What Zeep sees" panel. Every tier reads one layout (`proof-gate/layout.ts`), so the DOM lane labels line up with whatever draws.
+
+**Tiers** (`lib/fx/tier.ts`, tested):
+
+| Tier | What draws | Chosen when |
+| --- | --- | --- |
+| 0 Still | `Poster.tsx`, a seeded SVG | Reduced motion, data saver, or `NEXT_PUBLIC_FX_LEVEL=off` |
+| 1 Lite | `LiteScene.tsx`, a 2D canvas | `FX_LEVEL=lite`, no hardware WebGL2 (probed with `failIfMajorPerformanceCaveat`), 2 GB of memory or less, or a touch device with 4 cores or fewer |
+| 2 Standard | `Scene3D.tsx`: 1,400 points, 16 bokeh lights, pixel ratio up to 1.5 | Other capable devices |
+| 3 Ultra | 4,200 points with two trail echoes, 28 bokeh lights, antialiasing, pixel ratio up to 2 | Desktop (fine pointer, at least 1024 px), 8+ cores, 8 GB+ |
+
+**Lifecycle**
+
+- `Scene3D` is a `next/dynamic` import with `ssr: false`, requested after `requestIdleCallback` and only for tiers 2 and 3. The poster shows until the first WebGL frame. The landing page's first-load JS stays at about 114 kB, and the 3D chunks are about 245 kB gzipped (budget 250 kB).
+- The scene renders only while it is on screen and the tab is visible (`IntersectionObserver` and `visibilitychange` set R3F's `frameloop` to `"never"`).
+- Sustained frame rate is sampled in 2 s windows. Below 50 fps tier 3 steps down to 2, and below 30 fps tier 2 steps down to 1 (one-way). A lost WebGL context falls back to the poster.
+- **Unmount.** Leaving the page unmounts the R3F root, which disposes the scene graph and the renderer and calls `forceContextLoss()`. Our components also dispose their own buffer geometries and the generated PMREM environment, and remove their pointer listeners and observers. Audited in headless Chrome: after 20 landing round trips (more than Chrome's 16 live-context limit) there were no context warnings, one canvas and one context left reachable (the same as after 3 trips), no three.js renderers, and window and document listener counts back at their baseline.
+- **Shader rules learned the hard way.** Every custom fragment shader ends with `#include <colorspace_fragment>`. `smoothstep` edges must be ascending (a reversed call draws nothing on ANGLE/Metal). R3F copies a `uniforms` prop into the material, so per-frame updates go through the material ref, not the object passed in.
+
+### The Forge (paid buttons, CSS ratchet)
+
+`components/ui/ProofButton.tsx` hosts `components/fx/Forge.tsx` on Search, Look up, Call, Open an inbox, Transfer, Withdraw (direct withdrawals) and chat Send.
+
+- **Signals.** `lib/zeep/prove.ts` (the app's worker bridge, not the copied SDK) emits `onProof` "start" and "end" around every proof posted to `workers/spend.worker.ts`. `lib/fx/useForge.ts` wraps one paid call in `track()`, listens only for that call's lifetime, and feeds the pure, tested reducer in `lib/fx/forge.ts`.
+- **Phases.** preparing (dark, identity motes gather) → proving (gold, the motes converge into a hexagonal lattice; it spins again for every real proof) → sending (a white mote leaves) → settled (white with a drawn check) or failed (a shake). The outcome stays visible for 1.4 s or 0.9 s, which is the only timer.
+- **Why a ratchet.** Smooth CSS loops are composited, but they still made the compositor draw 61 frames a second, and with the prover on every core that slowed real proofs by about 18%. The lattice and the mote orbit now tick in steps (`steps(24)` over 2.4 s, 10 changes a second), so the compositor draws 10 frames a second. A randomised A/B of the identical proof then measured within noise.
+- **Layout and access.** Every label shares one grid cell, so the width never changes. `Button busy` keeps full colour while disabled. A polite live region announces "Proving" and the settled label.
+
+### The Vault Door (create, unlock, lock, switch; CSS 3D)
+
+`components/fx/VaultDoor.tsx` with `styles/vault-door.css`: a glass frame with six bolts, a leaf that swings on a left hinge under `perspective`, three notched rings (identity outside, gold in the middle, white inside) whose index ticks line up when unlocked or sealed, and a seam with warn and danger layers.
+
+- **Signals.** `lib/vault/kdf.ts` emits `onKdf` "start" and "end" around every Argon2id run. `lib/fx/useVaultDoor.ts` wraps a vault call (`unlockWithPin`, `unlockWithPasskey`, `createVault`) and feeds the tested reducer in `lib/fx/door.ts` with `PinError`'s `attemptsLeft` and `wiped`.
+- **Unlock.** The door is closed above the `PinPad`. The rings turn exactly while the worker derives. On success the session is already open, then the rings align, the bolts withdraw and the leaf swings, and only the route change waits (0.9 s, or none under reduced motion). A wrong PIN jolts the rings, and the dots turn red and shake. At one try left the seam turns `--warn` (restored from the stored count and also written as text). The wipe greys the door out.
+- **Create.** The door stands open during PIN entry, shuts and turns while `createVault` runs, then seals (rings align, bolts in, gold seam), and the flow moves to Deposit.
+- **Lock, auto-lock, network switch.** The session is cleared first. Then `lib/fx/doorIntent.ts` records why, and `/unlock` mounts the door "closing" and writes the reason. Auto-lock therefore always wins, and the ceremony never delays it. `/unlock` is prefetched while unlocked and has no Suspense boundary, so the door is in the first paint (measured at 11–48 ms from Lock in production).
+- **Cost.** The same 100 ms-tick rule as the Forge: about 11 frames a second for one door, and the real Argon2id derivation measured 573 ms without the door versus 580 ms with it turning. Keep it to one door per screen: eleven turning at once slowed derivation by half.
+
+**PIN pad.** Glass keys with the same subtle dim on every press and no hover lift or glow, so nothing points at the digit pressed. Confirmation happens on the dot row (gold → red and a shake → white). It locks while deriving and has an optional identical 8 ms vibration.
+
+**Reduced motion and FX off.** The Proof Gate shows the poster. The Forge and the door drop all spins, swings, slides and shakes and cross-fade between phases. Outcome holds are skipped, so nothing waits on an animation the user cannot see.
 
 ## Two balances
 
@@ -228,14 +293,16 @@ A v1 vault (the old credit model) does not open. The user restores the 24 words.
 **First visit (`/` → `/get`)**
 
 1. Create the 24-word phrase. The app asks for words 3, 12 and 21 before continuing.
-2. Set a 6-digit PIN, twice. A passkey is optional.
+2. Set a 6-digit PIN, twice. A passkey is optional. The Vault Door stands open above the pad, seals while `createVault` derives the key and writes the vault, and the flow continues once the seal has played.
 3. Optionally deposit. Skip lands in the app with an empty balance.
 
-**Unlock (`/unlock`).** Fingerprint first when a passkey exists, otherwise the PIN pad. The fifth wrong PIN wipes this device and offers `/restore`.
+**Unlock (`/unlock`).** The Vault Door, closed, above the PIN pad. Fingerprint first when a passkey exists. The rings turn while Argon2id runs, and the door opens into the `next` route on success. A wrong PIN jolts it, with "N tries left" as text. At one try left the seam turns amber and a warning line explains it. The fifth wrong PIN wipes this device and offers `/restore`.
 
-**Use a service.** The button does not show a price. Chat prices live only in the model picker. Other services use the live `micro_usd` from `/v1/prices`. The header credits update when the note book changes.
+**Lock and auto-lock.** Lock (header), idle auto-lock and hidden-tab auto-lock all clear the session first, then open `/unlock?next=<the current page>` (the same URL the app-route guard uses, so the page mounts once), where the door swings shut and the status line says why ("Locked after inactivity."). Unlocking returns to that page.
 
-**Network switch.** The header toggle locks the vault, writes `prefs`, and opens `/unlock`, `/restore`, or `/get` for the other network. Testnet shows an orange badge.
+**Use a service.** The button does not show a price. Chat prices live only in the model picker. Other services use the live `micro_usd` from `/v1/prices`. Each paid button is a `ProofButton`: the Forge plays preparing → proving → sending → settled from the real proof, and errors keep their existing text and "Add funds" link. The header credits update when the note book changes.
+
+**Network switch.** The header toggle locks the vault, writes `prefs`, and opens `/unlock`, `/restore`, or `/get` for the other network. Each network has its own vault and PIN, so `/unlock` plays the door closing with "Switched to <network>. Its vault has its own PIN." Testnet shows an orange badge.
 
 ## Security and hardening on Vercel
 
@@ -272,8 +339,34 @@ Cross-Origin-Resource-Policy: same-origin
 - Circuit files are hash-checked in the worker before use.
 - No server component reads user data. There are no Vercel Functions holding secrets.
 - Auto-lock after idle, and when the tab has been hidden for more than 60 seconds.
-- Copied recovery words are cleared from the clipboard after 30 seconds where the browser allows.
+- The recovery phrase has no copy button (ruled Oct 22, 2026): it is written down by hand, because clipboard-hijacking malware and OS clipboard history can read a copied phrase. `CopyField` keeps an optional 30-second clipboard clear (its `secret` prop, `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC`), which no field currently uses; addresses copy normally.
 - The deployed commit hash is shown in the footer.
+
+## Rules for contributors: thread safety and CSP
+
+These rules came out of measurements during the redesign. Treat them as acceptance criteria: a change that breaks one is not done.
+
+### Thread safety: never slow the cryptography
+
+1. **Crypto lives in workers.** Groth16 proofs (`workers/spend.worker.ts`), Argon2id (`workers/kdf.worker.ts`) and the Zcash wallet (`workers/wallet.worker.ts`) never run on the main thread. Don't move them, and don't add main-thread work that competes with them during a proof or a derivation.
+2. **No WebGL, canvas animation or `requestAnimationFrame` loop on app routes.** WebGL is allowed only on marketing pages, behind `SceneFrame`: lazily imported, tiered, paused off-screen. `/get`, `/unlock`, `/restore` and every `(app)` route animate with CSS only.
+3. **Animate only `transform` and `opacity`.** Masks, gradients, filters and shadows are fine when painted once and left alone. Never animate them, or colour, in a loop.
+4. **Loops that can run during a proof or a derivation tick in steps, at most 10 changes a second** (`steps(n)` over n × 100 ms, with every element on the same 100 ms beat). A composited animation is not free: a smooth 60 fps loop made the compositor and GPU process take enough CPU to slow proofs by about 18%.
+5. **Drive motion from real events.** Use `onProof` (`lib/zeep/prove.ts`), `onKdf` (`lib/vault/kdf.ts`) and the call's own promise. Timers may only hold an outcome on screen, and are skipped under reduced motion. Never show progress or success that has not happened.
+6. **Security state first, ceremony second.** Clear or open the session before any animation starts (`lockVault()` before `setDoorIntent`). Only a route change may wait for a ceremony, and only after the cryptography has finished. Auto-lock always wins.
+7. **One Vault Door per screen**, and no stacking of signature moments.
+8. **Measure before merging any motion near crypto.** Count compositor frames during the work (a Chrome trace's `Display::DrawAndSwap` per second) and run a randomised A/B of the real proof or derivation with the animation on and off (12+ runs each, compare medians). Accept only a result within noise.
+9. **Clean up everything you start.** Every listener, observer, timer, `requestAnimationFrame` and three.js geometry or texture needs a matching cleanup. R3F roots must unmount (not just hide), so the renderer is disposed and the context is released. Re-run the leak audit (route round trips, then a heap snapshot: live canvases, WebGL contexts and listener counts must not grow) after touching the Proof Gate.
+10. **Budgets.** Landing first-load JS about 114 kB; the 3D chunks at most 250 kB gzipped; app routes never request them; layout shift at most 0.05 (scenes reserve their box, and ProofButton keeps its width).
+
+### CSP and supply chain: no new origins
+
+1. **The CSP above does not change.** `connect-src` lists only the API, onion and lightwalletd URLs. `font-src` and `default-src` are `'self'`. There is no CDN, font service, analytics, error tracker or 3D embed (Spline, Sketchfab and similar).
+2. **Everything is bundled or committed.** Fonts go through `next/font` with files in the repo (a display font must use `next/font/local`, never a Google Fonts link). Models, textures, HDRIs, decoders (Draco, KTX2, Basis) and wasm are generated in code or committed under `public/` and served from this origin.
+3. **Watch library defaults.** Many three.js helpers fetch at runtime: drei's `Environment` presets, `useGLTF` with Draco from gstatic, and `Text` with CDN fonts. Use generated equivalents (as `RoomEnvironment` + `PMREMGenerator` are used here), or vendor the files. Before adding a dependency, grep its dist for `http`, `fetch(` and `importScripts`.
+4. **No `eval`.** A dependency must run under `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'` in a production build. Check before adding it, not after.
+5. **Pin exactly.** New runtime dependencies use exact versions (`three` 0.186.1, `@react-three/fiber` 9.8.2). The lockfile comes from a clean install with the pinned npm (`engines`: Node 22.x, npm 10.9.8).
+6. **Secrets stay DOM text.** The phrase, PIN and keys are never drawn into a canvas, a WebGL texture, SVG `<text>` or CSS `content:`, and never passed to an animation as data. The phrase has no copy button, and the PIN pad gives every key identical feedback.
 
 ## Vercel config vars
 
@@ -320,7 +413,7 @@ The example file uses localhost. On the live project, set:
 | `NEXT_PUBLIC_AUTOLOCK_SEC` | `300` | Lock after five idle minutes |
 | `NEXT_PUBLIC_PASSKEY_RP_ID` | `zeep-frontend.vercel.app` | Passkey relying party. Hostname only |
 | `NEXT_PUBLIC_RECOVERY_WORDS` | `24` | Phrase length |
-| `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC` | `30` | Clear a copied phrase |
+| `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC` | `30` | Clipboard clear for `CopyField secret` (no field uses it; the phrase cannot be copied) |
 
 **Chat and content**
 
@@ -329,7 +422,7 @@ The example file uses localhost. On the live project, set:
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `20` | Attachment ceiling before prices load |
 | `NEXT_PUBLIC_CHAT_AUTODELETE_DEFAULT` | `false` | 30-day chat deletion |
 | `NEXT_PUBLIC_CHAT_SYNC_DEFAULT` | `false` | Sync ciphertext to the vault API |
-| `NEXT_PUBLIC_LANDING_ANIMATION` | `true` | Landing canvas |
+| `NEXT_PUBLIC_FX_LEVEL` | `auto` | Motion level: `auto` picks the Proof Gate tier per device, `lite` caps it at the 2D canvas, `off` shows the still poster and makes the Forge and the Vault Door cross-fade only. The older `NEXT_PUBLIC_LANDING_ANIMATION=false` still means `off` |
 | `NEXT_PUBLIC_SOURCE_URL` | the frontend repo | Footer link |
 | `NEXT_PUBLIC_DOCS_URL` | `https://zeep.app/docs` | Docs link |
 
@@ -354,18 +447,29 @@ Zeep-front/
     deposit/DepositPanel.tsx
     wallet/WalletCard.tsx
     screens/                        # one screen per service, plus balance and reserve
-    flows/                          # get, unlock, restore, reauth
+    flows/                          # get, unlock, restore, reauth (the door lives in get and unlock)
+    PinPad.tsx                      # glass keys, uniform press, confirming dot row
+    Button.tsx                      # primary, secondary, ghost, danger; busy
+    ui/                             # Surface, ProofButton, IconButton, Toggle, Input, Menu
+    fx/Forge.tsx                    # the Forge (CSS, data-phase)
+    fx/VaultDoor.tsx                # the Vault Door (CSS 3D, data-phase)
+    fx/proof-gate/                  # SceneFrame, Scene3D (R3F), Gate, Particles, Bokeh, Lanes, LiteScene, Poster, layout
+    landing/ProofGateHero.tsx       # the scene plus the glass "What Zeep sees" panel
   lib/
-    zeep/                           # copy of the backend sdk/, plus pay/prove helpers and fund()
-    vault/                          # Argon2id, AES-GCM, passkey, IndexedDB, session
+    zeep/                           # copy of the backend sdk/, plus pay/prove helpers and fund(); prove.ts emits onProof
+    vault/                          # Argon2id (kdf.ts emits onKdf), AES-GCM, passkey, IndexedDB, session
+    fx/                             # tier.ts, forge.ts + useForge, door.ts + useVaultDoor, doorIntent.ts (with tests)
+    motion/tokens.ts                # durations, curves and springs mirrored from tokens.css
     zcash/                          # ZIP 321, address kinds, wallet-worker bridge
     chat/                           # local store, vault sync, file reading
     api/                            # public client, zod, SSE
   workers/spend.worker.ts
+  workers/kdf.worker.ts
   workers/wallet.worker.ts
   public/circuits/                  # zeep_spend.wasm, zeep_spend.zkey
   public/webzjs/                    # vendored WebZjs wallet build, when present
-  styles/tokens.css
+  styles/tokens.css                 # colour, elevation, glass and motion tokens
+  styles/vault-door.css             # the Vault Door, imported by app/globals.css
   next.config.ts                    # CSP, COOP, COEP, circuit cache
   .env.example                      # the file imported into Vercel
 ```
