@@ -71,6 +71,17 @@ function fromSession(network: Network): VaultView {
   };
 }
 
+/**
+ * Where a lock or a network switch goes: /unlock with `next` set to the current page. It is the
+ * same URL RequireVault redirects app routes to, so the page sees one navigation and /unlock
+ * mounts once (a second navigation would remount it and drop the Vault Door's reason line).
+ */
+function unlockUrl(): string {
+  const here = window.location.pathname;
+  if (here === "/unlock" || here === "/get" || here === "/restore") return "/unlock";
+  return `/unlock?next=${encodeURIComponent(here)}`;
+}
+
 export function VaultState({ children }: { children: ReactNode }) {
   const router = useRouter();
   const toast = useToast();
@@ -123,7 +134,7 @@ export function VaultState({ children }: { children: ReactNode }) {
     async (reason: Exclude<DoorIntent["reason"], "switch"> = "lock") => {
       await lockVault();
       setDoorIntent({ reason });
-      router.push("/unlock");
+      router.push(unlockUrl());
     },
     [router],
   );
@@ -136,7 +147,7 @@ export function VaultState({ children }: { children: ReactNode }) {
       // Only /unlock plays the door, so only record the switch when that is where we are going.
       if (status === "locked") {
         setDoorIntent({ reason: "switch", network });
-        router.push("/unlock");
+        router.push(unlockUrl());
       }
       else if (status === "wiped") router.push("/restore");
       else router.push("/get");
