@@ -114,6 +114,11 @@ export function VaultState({ children }: { children: ReactNode }) {
   }, [view.status, view.network]);
 
   // The session is cleared first; only then does /unlock play the Vault Door closing.
+  // While unlocked, keep /unlock's code warm, so a lock or auto-lock shows the door without a fetch.
+  useEffect(() => {
+    if (view.status === "unlocked") router.prefetch("/unlock");
+  }, [view.status, router]);
+
   const lock = useCallback(
     async (reason: Exclude<DoorIntent["reason"], "switch"> = "lock") => {
       await lockVault();
