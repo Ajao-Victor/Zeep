@@ -298,7 +298,7 @@ A v1 vault (the old credit model) does not open. The user restores the 24 words.
 
 **Unlock (`/unlock`).** The Vault Door, closed, above the PIN pad. Fingerprint first when a passkey exists. The rings turn while Argon2id runs, and the door opens into the `next` route on success. A wrong PIN jolts it, with "N tries left" as text. At one try left the seam turns amber and a warning line explains it. The fifth wrong PIN wipes this device and offers `/restore`.
 
-**Lock and auto-lock.** Lock (header), idle auto-lock and hidden-tab auto-lock all clear the session first, then open `/unlock`, where the door swings shut and the status line says why ("Locked after inactivity.").
+**Lock and auto-lock.** Lock (header), idle auto-lock and hidden-tab auto-lock all clear the session first, then open `/unlock?next=<the current page>` (the same URL the app-route guard uses, so the page mounts once), where the door swings shut and the status line says why ("Locked after inactivity."). Unlocking returns to that page.
 
 **Use a service.** The button does not show a price. Chat prices live only in the model picker. Other services use the live `micro_usd` from `/v1/prices`. Each paid button is a `ProofButton`: the Forge plays preparing → proving → sending → settled from the real proof, and errors keep their existing text and "Add funds" link. The header credits update when the note book changes.
 
