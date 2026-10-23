@@ -340,6 +340,32 @@ Cross-Origin-Resource-Policy: same-origin
 - Copied recovery words are cleared from the clipboard after 30 seconds where the browser allows.
 - The deployed commit hash is shown in the footer.
 
+## Rules for contributors: thread safety and CSP
+
+These rules came out of measurements during the redesign. Treat them as acceptance criteria: a change that breaks one is not done.
+
+### Thread safety: never slow the cryptography
+
+1. **Crypto lives in workers.** Groth16 proofs (`workers/spend.worker.ts`), Argon2id (`workers/kdf.worker.ts`) and the Zcash wallet (`workers/wallet.worker.ts`) never run on the main thread. Don't move them, and don't add main-thread work that competes with them during a proof or a derivation.
+2. **No WebGL, canvas animation or `requestAnimationFrame` loop on app routes.** WebGL is allowed only on marketing pages, behind `SceneFrame`: lazily imported, tiered, paused off-screen. `/get`, `/unlock`, `/restore` and every `(app)` route animate with CSS only.
+3. **Animate only `transform` and `opacity`.** Masks, gradients, filters and shadows are fine when painted once and left alone. Never animate them, or colour, in a loop.
+4. **Loops that can run during a proof or a derivation tick in steps, at most 10 changes a second** (`steps(n)` over n × 100 ms, with every element on the same 100 ms beat). A composited animation is not free: a smooth 60 fps loop made the compositor and GPU process take enough CPU to slow proofs by about 18%.
+5. **Drive motion from real events.** Use `onProof` (`lib/zeep/prove.ts`), `onKdf` (`lib/vault/kdf.ts`) and the call's own promise. Timers may only hold an outcome on screen, and are skipped under reduced motion. Never show progress or success that has not happened.
+6. **Security state first, ceremony second.** Clear or open the session before any animation starts (`lockVault()` before `setDoorIntent`). Only a route change may wait for a ceremony, and only after the cryptography has finished. Auto-lock always wins.
+7. **One Vault Door per screen**, and no stacking of signature moments.
+8. **Measure before merging any motion near crypto.** Count compositor frames during the work (a Chrome trace's `Display::DrawAndSwap` per second) and run a randomised A/B of the real proof or derivation with the animation on and off (12+ runs each, compare medians). Accept only a result within noise.
+9. **Clean up everything you start.** Every listener, observer, timer, `requestAnimationFrame` and three.js geometry or texture needs a matching cleanup. R3F roots must unmount (not just hide), so the renderer is disposed and the context is released. Re-run the leak audit (route round trips, then a heap snapshot: live canvases, WebGL contexts and listener counts must not grow) after touching the Proof Gate.
+10. **Budgets.** Landing first-load JS about 114 kB; the 3D chunks at most 250 kB gzipped; app routes never request them; layout shift at most 0.05 (scenes reserve their box, and ProofButton keeps its width).
+
+### CSP and supply chain: no new origins
+
+1. **The CSP above does not change.** `connect-src` lists only the API, onion and lightwalletd URLs. `font-src` and `default-src` are `'self'`. There is no CDN, font service, analytics, error tracker or 3D embed (Spline, Sketchfab and similar).
+2. **Everything is bundled or committed.** Fonts go through `next/font` with files in the repo (a display font must use `next/font/local`, never a Google Fonts link). Models, textures, HDRIs, decoders (Draco, KTX2, Basis) and wasm are generated in code or committed under `public/` and served from this origin.
+3. **Watch library defaults.** Many three.js helpers fetch at runtime: drei's `Environment` presets, `useGLTF` with Draco from gstatic, and `Text` with CDN fonts. Use generated equivalents (as `RoomEnvironment` + `PMREMGenerator` are used here), or vendor the files. Before adding a dependency, grep its dist for `http`, `fetch(` and `importScripts`.
+4. **No `eval`.** A dependency must run under `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'` in a production build. Check before adding it, not after.
+5. **Pin exactly.** New runtime dependencies use exact versions (`three` 0.186.1, `@react-three/fiber` 9.8.2). The lockfile comes from a clean install with the pinned npm (`engines`: Node 22.x, npm 10.9.8).
+6. **Secrets stay DOM text.** The phrase, PIN and keys are never drawn into a canvas, a WebGL texture, SVG `<text>` or CSS `content:`, and never passed to an animation as data. The phrase has no copy button, and the PIN pad gives every key identical feedback.
+
 ## Vercel config vars
 
 Add these under Project → Settings → Environment Variables, for Production and Preview. Choose **Config**, not Secret: every value is public (`NEXT_PUBLIC_`). The file to import is `.env.example` in the repo root. Next.js bakes these values in at build time, so redeploy after any change. Saving them does nothing until the next build.
