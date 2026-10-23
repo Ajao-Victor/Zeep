@@ -1,6 +1,6 @@
 # Zeep — Frontend Architecture (Vercel)
 
-Oct 21, 2026 · @0xAristos
+Oct 21, 2026 · @0xAristos · updated Oct 23, 2026 for the v2 design (Obsidian edition)
 
 ## Overview
 
