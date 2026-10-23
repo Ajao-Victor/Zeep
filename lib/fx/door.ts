@@ -5,7 +5,7 @@
 export type DoorPhase =
   | "open" // the vault is not sealed yet (creating a vault, before the PIN is saved)
   | "sealing" // createVault is deriving the key and writing the vault
-  | "sealed" // the new vault is saved
+  | "sealed" // the new vault is saved; rests as closed once the seal has played
   | "closed" // locked, at rest
   | "closing" // the session was just cleared (lock, auto-lock, network switch)
   | "deriving" // unlock: Argon2id is running
@@ -25,7 +25,7 @@ export type DoorSignal =
 export type DoorState = { phase: DoorPhase; warn: boolean };
 
 /** How long an outcome plays before `rest`, in ms. Reduced motion uses 0 (see useVaultDoor). */
-export const DOOR_HOLD: Partial<Record<DoorPhase, number>> = { opening: 900, rejected: 520, closing: 900 };
+export const DOOR_HOLD: Partial<Record<DoorPhase, number>> = { opening: 900, sealed: 900, rejected: 520, closing: 900 };
 
 export function doorStep(state: DoorState, signal: DoorSignal): DoorState {
   const { phase } = state;
@@ -49,7 +49,7 @@ export function doorStep(state: DoorState, signal: DoorSignal): DoorState {
       return phase === "wiped" ? state : { ...state, phase: "closing" };
     case "rest":
       if (phase === "opening") return { ...state, phase: "unsealed" };
-      if (phase === "rejected" || phase === "closing") return { ...state, phase: "closed" };
+      if (phase === "rejected" || phase === "closing" || phase === "sealed") return { ...state, phase: "closed" };
       return state;
     case "warn":
       return { ...state, warn: signal.attemptsLeft === 1 };

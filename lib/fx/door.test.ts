@@ -40,6 +40,7 @@ describe("the Vault Door", () => {
     expect(run(open, [{ type: "kdf" }]).phase).toBe("sealing");
     expect(run(open, [{ type: "kdf" }, { type: "ok" }]).phase).toBe("sealed");
     expect(run(open, [{ type: "kdf" }, { type: "fail" }]).phase).toBe("open");
+    expect(run(open, [{ type: "kdf" }, { type: "ok" }, { type: "rest" }]).phase).toBe("closed");
   });
 
   it("closes on lock or network switch, then rests closed and can unlock again", () => {
