@@ -17,6 +17,13 @@
   flex: none;
 }
 
+/* Phones: a smaller door keeps the PIN pad and its Unlock button above the fold. */
+@media (max-width: 480px) {
+  .door {
+    --door: 132px;
+  }
+}
+
 /* The fixed frame the leaf sits in: glass, with depth from an inset shadow. */
 .door-frame {
   position: absolute;
@@ -182,9 +189,10 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 6px;
-  height: 12px;
-  margin: -6px 0 0 -3px;
+  /* 6 x 12 px at the full 168 px door, scaled with it. */
+  width: calc(var(--door) * 0.036);
+  height: calc(var(--door) * 0.072);
+  margin: calc(var(--door) * -0.036) 0 0 calc(var(--door) * -0.018);
   border-radius: 2px;
   background: linear-gradient(var(--gold-hover), var(--gold-deep));
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45);
