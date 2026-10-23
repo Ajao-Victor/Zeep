@@ -447,18 +447,29 @@ Zeep-front/
     deposit/DepositPanel.tsx
     wallet/WalletCard.tsx
     screens/                        # one screen per service, plus balance and reserve
-    flows/                          # get, unlock, restore, reauth
+    flows/                          # get, unlock, restore, reauth (the door lives in get and unlock)
+    PinPad.tsx                      # glass keys, uniform press, confirming dot row
+    Button.tsx                      # primary, secondary, ghost, danger; busy
+    ui/                             # Surface, ProofButton, IconButton, Toggle, Input, Menu
+    fx/Forge.tsx                    # the Forge (CSS, data-phase)
+    fx/VaultDoor.tsx                # the Vault Door (CSS 3D, data-phase)
+    fx/proof-gate/                  # SceneFrame, Scene3D (R3F), Gate, Particles, Bokeh, Lanes, LiteScene, Poster, layout
+    landing/ProofGateHero.tsx       # the scene plus the glass "What Zeep sees" panel
   lib/
-    zeep/                           # copy of the backend sdk/, plus pay/prove helpers and fund()
-    vault/                          # Argon2id, AES-GCM, passkey, IndexedDB, session
+    zeep/                           # copy of the backend sdk/, plus pay/prove helpers and fund(); prove.ts emits onProof
+    vault/                          # Argon2id (kdf.ts emits onKdf), AES-GCM, passkey, IndexedDB, session
+    fx/                             # tier.ts, forge.ts + useForge, door.ts + useVaultDoor, doorIntent.ts (with tests)
+    motion/tokens.ts                # durations, curves and springs mirrored from tokens.css
     zcash/                          # ZIP 321, address kinds, wallet-worker bridge
     chat/                           # local store, vault sync, file reading
     api/                            # public client, zod, SSE
   workers/spend.worker.ts
+  workers/kdf.worker.ts
   workers/wallet.worker.ts
   public/circuits/                  # zeep_spend.wasm, zeep_spend.zkey
   public/webzjs/                    # vendored WebZjs wallet build, when present
-  styles/tokens.css
+  styles/tokens.css                 # colour, elevation, glass and motion tokens
+  styles/vault-door.css             # the Vault Door, imported by app/globals.css
   next.config.ts                    # CSP, COOP, COEP, circuit cache
   .env.example                      # the file imported into Vercel
 ```
