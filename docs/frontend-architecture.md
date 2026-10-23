@@ -293,14 +293,16 @@ A v1 vault (the old credit model) does not open. The user restores the 24 words.
 **First visit (`/` → `/get`)**
 
 1. Create the 24-word phrase. The app asks for words 3, 12 and 21 before continuing.
-2. Set a 6-digit PIN, twice. A passkey is optional.
+2. Set a 6-digit PIN, twice. A passkey is optional. The Vault Door stands open above the pad, seals while `createVault` derives the key and writes the vault, and the flow continues once the seal has played.
 3. Optionally deposit. Skip lands in the app with an empty balance.
 
-**Unlock (`/unlock`).** Fingerprint first when a passkey exists, otherwise the PIN pad. The fifth wrong PIN wipes this device and offers `/restore`.
+**Unlock (`/unlock`).** The Vault Door, closed, above the PIN pad. Fingerprint first when a passkey exists. The rings turn while Argon2id runs, and the door opens into the `next` route on success. A wrong PIN jolts it, with "N tries left" as text. At one try left the seam turns amber and a warning line explains it. The fifth wrong PIN wipes this device and offers `/restore`.
 
-**Use a service.** The button does not show a price. Chat prices live only in the model picker. Other services use the live `micro_usd` from `/v1/prices`. The header credits update when the note book changes.
+**Lock and auto-lock.** Lock (header), idle auto-lock and hidden-tab auto-lock all clear the session first, then open `/unlock`, where the door swings shut and the status line says why ("Locked after inactivity.").
 
-**Network switch.** The header toggle locks the vault, writes `prefs`, and opens `/unlock`, `/restore`, or `/get` for the other network. Testnet shows an orange badge.
+**Use a service.** The button does not show a price. Chat prices live only in the model picker. Other services use the live `micro_usd` from `/v1/prices`. Each paid button is a `ProofButton`: the Forge plays preparing → proving → sending → settled from the real proof, and errors keep their existing text and "Add funds" link. The header credits update when the note book changes.
+
+**Network switch.** The header toggle locks the vault, writes `prefs`, and opens `/unlock`, `/restore`, or `/get` for the other network. Each network has its own vault and PIN, so `/unlock` plays the door closing with "Switched to <network>. Its vault has its own PIN." Testnet shows an orange badge.
 
 ## Security and hardening on Vercel
 
