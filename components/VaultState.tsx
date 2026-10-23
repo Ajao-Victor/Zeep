@@ -128,7 +128,11 @@ export function VaultState({ children }: { children: ReactNode }) {
       if (network === view.network && view.ready) return;
       await switchNetwork(network);
       const status = await vaultStatus(network);
-      if (status === "locked") router.push("/unlock");
+      // Only /unlock plays the door, so only record the switch when that is where we are going.
+      if (status === "locked") {
+        setDoorIntent({ reason: "switch", network });
+        router.push("/unlock");
+      }
       else if (status === "wiped") router.push("/restore");
       else router.push("/get");
     },
