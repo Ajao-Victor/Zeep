@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { config } from "@/lib/config";
 import { errorText } from "@/lib/format";
+import { clearDoorIntent, doorIntentText, peekDoorIntent } from "@/lib/fx/doorIntent";
 import { useVaultDoor } from "@/lib/fx/useVaultDoor";
 import { passkeySupported, unlockPasskey } from "@/lib/vault/passkey";
 import { PinError, readMeta, unlockWithPasskey, unlockWithPin } from "@/lib/vault/vault";
@@ -28,7 +29,9 @@ export function UnlockFlow() {
   const [busy, setBusy] = useState("");
   const [hasPasskey, setHasPasskey] = useState(false);
   const [wrong, setWrong] = useState(false);
-  const door = useVaultDoor("closed");
+  // Arriving from a lock or network switch: the door swings shut, and the reason is written below.
+  const [intent] = useState(peekDoorIntent);
+  const door = useVaultDoor(intent ? "closing" : "closed");
   // Set while this page's own unlock plays the door open, so the redirect waits for the ceremony.
   const unlocking = useRef(false);
   const { signal } = door;
@@ -42,6 +45,8 @@ export function UnlockFlow() {
       if (meta) signal({ type: "warn", attemptsLeft: config.pinMaxAttempts - meta.failedAttempts });
     });
   }, [view.ready, view.status, view.network, router, next, signal]);
+
+  useEffect(() => clearDoorIntent(), []);
 
   // The session is already open when the door starts opening; only the route change waits for it.
   useEffect(() => {
@@ -142,7 +147,11 @@ export function UnlockFlow() {
           />
         </div>
         <p className="mt-4 min-h-5 text-center text-[13px]" role="status">
-          {error ? <span className="text-danger">{error}</span> : <span className="text-muted">{busy}</span>}
+          {error ? (
+            <span className="text-danger">{error}</span>
+          ) : (
+            <span className="text-muted">{busy || (intent && !pin ? doorIntentText(intent) : "")}</span>
+          )}
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button disabled={Boolean(busy) || pin.length !== config.pinLength} onClick={() => void unlockPin()}>
