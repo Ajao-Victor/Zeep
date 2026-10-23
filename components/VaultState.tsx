@@ -138,19 +138,19 @@ export function VaultState({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (view.status !== "unlocked") return;
     let timer = window.setTimeout(() => {
-      void lock().then(() => toast("Locked after inactivity.", "warn"));
+      void lock("idle").then(() => toast("Locked after inactivity.", "warn"));
     }, config.autolockSec * 1000);
     const reset = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        void lock().then(() => toast("Locked after inactivity.", "warn"));
+        void lock("idle").then(() => toast("Locked after inactivity.", "warn"));
       }, config.autolockSec * 1000);
     };
     let hiddenAt = 0;
     const onShow = () => {
       if (document.hidden) hiddenAt = Date.now();
       else if (hiddenAt && Date.now() - hiddenAt > 60_000) {
-        void lock().then(() => toast("Locked because this tab was hidden.", "warn"));
+        void lock("hidden").then(() => toast("Locked because this tab was hidden.", "warn"));
       }
     };
     window.addEventListener("pointerdown", reset);
