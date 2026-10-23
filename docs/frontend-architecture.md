@@ -103,14 +103,22 @@ One accent, one border weight, two typefaces. Gold is used where the user acts o
 | `--line-strong` | `#2E2C28` | Secondary button borders |
 | `--text` | `#ECE8E1` | Primary text |
 | `--muted` | `#8C877D` | Secondary text |
-| `--faint` | `#6F6B62` | Hints |
+| `--faint` | `#87827A` | Hints (raised from `#6F6B62` to pass 4.5:1 on every surface) |
 | `--gold` | `#D9A441` | Primary buttons, credit total |
 | `--gold-hover` | `#E6B656` | Gold button hover |
 | `--ok` | `#9CB58A` | Confirmed states |
 | `--warn` | `#D98A41` | Testnet badge, shielding |
 | `--danger` | `#D06B5C` | Errors, a wiped vault |
+| `--void` | `#070706` | The space behind scenes and glass |
+| `--gold-deep`, `--gold-glow` | `#8F6418`, gold at 35% | Gold as a light source: ring shading, glows |
+| `--anon`, `--anon-glow` | `#F4F2EE`, at 22% | Anonymous white: only things that passed a proof |
+| `--id-1` … `--id-6` | six muted hues | Identity: before the proof only (scenes, the Forge's motes, the door's outer ring). Never UI chrome |
 
-Components use these tokens. A light theme can come later by redefining them.
+Also in `styles/tokens.css`: elevation (`--elev-1`, `--elev-2`, `--elev-gold`), glass (`--glass-1/2-fill`, `--glass-1/2-blur`, `--glass-edge`; the fills are the minimum opacity that keeps text AA and must not be lowered), and motion (`--dur-instant` 90 ms … `--dur-cinematic` 900 ms, `--curve-enter/move/exit`, with the slow durations capped under reduced motion). `lib/motion/tokens.ts` mirrors the durations and curves for JavaScript, and a test fails if the two drift. Components use these tokens. A light theme can come later by redefining them.
+
+**Utilities** (`app/globals.css`): `glass-1` and `glass-2` (with an opaque fallback and `prefers-reduced-transparency`), `glass-edge` (a lit top edge; needs a positioned element), `tint-*` (sets `--tint`, which the focus ring and tinted components read), `sheen` (the primary button's hover light), `pop-in` (menus) and `zeep-shake`.
+
+**Primitives** (`components/ui/` and `components/`): `Surface`/`Card` (`Panel` is an alias), `Button` (primary, secondary, ghost, danger; `busy` disables without dimming), `ProofButton` (hosts the Forge), `IconButton` (36 px visual, 44 px hit area), `Toggle` (segmented or chips), `Input`/`Textarea`, `Menu`, `PinPad`, and the effects in `components/fx/` (`VaultDoor`, `Forge`, `proof-gate/`).
 
 **Type.** Inter for text (60 / 32 / 17 / 15 / 14 / 13 px). JetBrains Mono for credits, ZEC, prices and addresses.
 
@@ -123,7 +131,7 @@ Components use these tokens. A light theme can come later by redefining them.
 - The main column is centered at a max of 768 px.
 - An empty thread says the proof shows the payment, not who you are, and that the history stays on the device. Once a chat exists, one faint line sits above the composer: "Zeep sees the prompt, not who sent it."
 
-**Motion.** Only the landing animation moves on its own. Buttons use a 150 ms colour change. The canvas pauses off-screen and draws a still frame when the user prefers reduced motion.
+**Motion.** Instrument UI stays under `--dur-base` (buttons lift 1 px and change colour in 150 ms). Only the three signature moments use long or looping motion, described in the next section. Everything honours `prefers-reduced-motion` and `NEXT_PUBLIC_FX_LEVEL=off`.
 
 ## Two balances
 
