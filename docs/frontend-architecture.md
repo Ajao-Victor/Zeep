@@ -337,7 +337,7 @@ Cross-Origin-Resource-Policy: same-origin
 - Circuit files are hash-checked in the worker before use.
 - No server component reads user data. There are no Vercel Functions holding secrets.
 - Auto-lock after idle, and when the tab has been hidden for more than 60 seconds.
-- Copied recovery words are cleared from the clipboard after 30 seconds where the browser allows.
+- The recovery phrase has no copy button (ruled Oct 22, 2026): it is written down by hand, because clipboard-hijacking malware and OS clipboard history can read a copied phrase. `CopyField` keeps an optional 30-second clipboard clear (its `secret` prop, `NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC`), which no field currently uses; addresses copy normally.
 - The deployed commit hash is shown in the footer.
 
 ## Rules for contributors: thread safety and CSP
