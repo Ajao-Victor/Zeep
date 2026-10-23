@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SERVICES } from "@/lib/catalog";
 import { Faq } from "@/components/landing/Faq";
-import { ProofFlowCanvas } from "@/components/landing/ProofFlowCanvas";
+import { ProofGateHero } from "@/components/landing/ProofGateHero";
 import { ServiceCard } from "@/components/ServiceCard";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
@@ -38,7 +38,7 @@ export default function HomePage() {
             <div><b className="mb-0.5 block text-[15px] font-medium text-text">One phrase</b>Wallet, balance, and chats</div>
           </div>
         </div>
-        <ProofFlowCanvas />
+        <ProofGateHero />
       </section>
 
       <section id="how" className="border-t border-line py-16">

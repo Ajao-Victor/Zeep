@@ -21,17 +21,19 @@ type Props = {
   variant?: keyof typeof variants;
   size?: keyof typeof sizes;
   href?: string;
+  /** Working on the user's request: disabled and aria-busy, but not dimmed (the Forge plays inside). */
+  busy?: boolean;
   children: ReactNode;
   className?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function Button({ variant = "primary", size = "md", href, children, className, type = "button", ...props }: Props) {
+export function Button({ variant = "primary", size = "md", href, busy = false, children, className, type = "button", disabled, ...props }: Props) {
   const classes = cx(
     "relative inline-flex items-center justify-center rounded-lg font-medium",
     sizes[size],
     "transition-[background-color,border-color,box-shadow,color,translate] duration-(--dur-quick) ease-enter",
     "motion-safe:not-disabled:hover:-translate-y-px not-disabled:active:duration-(--dur-instant) motion-safe:not-disabled:active:translate-y-0",
-    "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
+    busy ? "cursor-progress" : "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none",
     variants[variant],
     className,
   );
@@ -43,7 +45,7 @@ export function Button({ variant = "primary", size = "md", href, children, class
     );
   }
   return (
-    <button type={type} className={classes} {...props}>
+    <button type={type} className={classes} disabled={disabled || busy} aria-busy={busy || undefined} {...props}>
       {children}
     </button>
   );

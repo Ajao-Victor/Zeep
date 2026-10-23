@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/lib/config";
 import { errorText } from "@/lib/format";
+import { useVaultDoor } from "@/lib/fx/useVaultDoor";
 import { createPhrase, quizIndexes } from "@/lib/vault/phrase";
 import { passkeySupported, registerPasskey } from "@/lib/vault/passkey";
 import { createVault } from "@/lib/vault/vault";
@@ -12,6 +13,7 @@ import { DepositPanel } from "@/components/deposit/DepositPanel";
 import { Notice, Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { PhraseGrid } from "@/components/PhraseGrid";
 import { PinPad } from "@/components/PinPad";
+import { VaultDoor } from "@/components/fx/VaultDoor";
 import { useVault } from "@/components/Providers";
 import { cx } from "@/lib/cx";
 
@@ -34,6 +36,7 @@ export function GetFlow() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  const door = useVaultDoor("open");
   const indexes = quizIndexes();
   const words = phrase ? phraseWords(phrase) : [];
 
@@ -41,8 +44,14 @@ export function GetFlow() {
     if (step === "Phrase" && !phrase) setPhrase(createPhrase());
   }, [phrase, step]);
 
+  // The vault is saved when the door seals; move on once the seal has played.
+  useEffect(() => {
+    if (door.phase === "closed") setStep("Deposit");
+  }, [door.phase]);
+
   if (!view.ready) return <Page narrow><p className="text-muted">Checking this device…</p></Page>;
-  if (view.status === "unlocked" && step !== "Deposit") {
+  // Our own createVault unlocks the session mid-ceremony, so this applies only before sealing starts.
+  if (view.status === "unlocked" && step !== "Deposit" && door.phase === "open") {
     return (
       <Page narrow>
         <PageIntro title="This network already has a balance." lede="It is unlocked on this device." />
@@ -87,15 +96,15 @@ export function GetFlow() {
     }
     setBusy("Saving the vault…");
     try {
-      await createVault({ network: view.network, pin, phrase, prf, credentialId });
+      await door.track(() => createVault({ network: view.network, pin, phrase, prf, credentialId }));
       setPhrase("");
       setPin("");
       setAgain("");
-      setStep("Deposit");
+      setBusy("Vault sealed.");
     } catch (cause) {
       setError(errorText(cause));
-    } finally {
       setBusy("");
+    } finally {
       prf?.fill(0);
     }
   }
@@ -144,6 +153,8 @@ export function GetFlow() {
                 <TextField
                   key={number}
                   label={`Word ${number}`}
+                  secret
+                  invalid={Boolean(error) && answers[index]?.trim().toLowerCase() !== words[number - 1]}
                   value={answers[index] ?? ""}
                   onChange={(value) => setAnswers((current) => {
                     const next = indexes.map((_, item) => current[item] ?? "");
@@ -170,13 +181,22 @@ export function GetFlow() {
 
       {step === "PIN" ? (
         <Panel>
+          <div className="mb-5 flex justify-center">
+            <VaultDoor phase={door.phase} />
+          </div>
           <h2 className="text-[17px] font-medium">{confirming ? "Enter the PIN again" : "Choose a 6-digit PIN"}</h2>
           <p className="mt-2 text-[14px] text-muted">Argon2id derives the key in a worker. Five wrong unlocks erase this device's vault.</p>
           <div className="mt-5">
-            <PinPad length={config.pinLength} value={confirming ? again : pin} onChange={confirming ? setAgain : setPin} />
+            <PinPad
+              length={config.pinLength}
+              value={confirming ? again : pin}
+              onChange={confirming ? setAgain : setPin}
+              status={door.phase === "sealing" ? "busy" : door.phase === "sealed" || door.phase === "closed" ? "ok" : "idle"}
+              disabled={Boolean(busy)}
+            />
           </div>
           {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-          {busy ? <p className="mt-3 text-[13px] text-muted">{busy}</p> : null}
+          <p className="mt-3 min-h-5 text-[13px] text-muted" role="status">{busy}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             {confirming ? (
               <>
@@ -190,7 +210,7 @@ export function GetFlow() {
             ) : (
               <Button disabled={pin.length !== config.pinLength} onClick={() => { setConfirming(true); setError(""); }}>Continue</Button>
             )}
-            <Button variant="secondary" onClick={() => (confirming ? setConfirming(false) : setStep("Phrase"))}>Back</Button>
+            <Button variant="secondary" disabled={Boolean(busy)} onClick={() => (confirming ? setConfirming(false) : setStep("Phrase"))}>Back</Button>
           </div>
         </Panel>
       ) : null}

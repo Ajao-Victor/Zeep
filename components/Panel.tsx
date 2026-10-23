@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cx } from "@/lib/cx";
+import { Input } from "@/components/ui/Input";
 import { Surface } from "@/components/ui/Surface";
 
 /** The app's standard panel: a glass Surface. Kept so existing screens migrate without edits. */
@@ -57,22 +58,31 @@ export function TextField({
   onChange,
   placeholder,
   autoComplete = "off",
+  invalid = false,
+  secret = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   autoComplete?: string;
+  invalid?: boolean;
+  /** Recovery words: no spellcheck, autocorrect or autocapitalise, which can send text off the device. */
+  secret?: boolean;
 }) {
   return (
     <label className="block text-[13px] text-muted">
       {label}
-      <input
+      <Input
         value={value}
         autoComplete={autoComplete}
         placeholder={placeholder}
+        invalid={invalid}
+        spellCheck={secret ? false : undefined}
+        autoCorrect={secret ? "off" : undefined}
+        autoCapitalize={secret ? "none" : undefined}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1.5 w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-[15px] text-text outline-none placeholder:text-faint"
+        className="mt-1.5"
       />
     </label>
   );

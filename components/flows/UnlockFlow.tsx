@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { config } from "@/lib/config";
+import { cx } from "@/lib/cx";
 import { errorText } from "@/lib/format";
+import { clearDoorIntent, doorIntentText, peekDoorIntent } from "@/lib/fx/doorIntent";
+import { useVaultDoor } from "@/lib/fx/useVaultDoor";
 import { passkeySupported, unlockPasskey } from "@/lib/vault/passkey";
 import { PinError, readMeta, unlockWithPasskey, unlockWithPin } from "@/lib/vault/vault";
 import { Button } from "@/components/Button";
 import { Notice, Page, PageIntro, Panel } from "@/components/Panel";
 import { PinPad } from "@/components/PinPad";
+import { VaultDoor } from "@/components/fx/VaultDoor";
 import { useVault } from "@/components/Providers";
 
 function safeNext(value: string | null): string {
@@ -25,44 +29,76 @@ export function UnlockFlow() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
   const [hasPasskey, setHasPasskey] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  // Arriving from a lock or network switch: the door swings shut, and the reason is written below.
+  const [intent] = useState(peekDoorIntent);
+  const door = useVaultDoor(intent ? "closing" : "closed");
+  // Set while this page's own unlock plays the door open, so the redirect waits for the ceremony.
+  const unlocking = useRef(false);
+  const { signal } = door;
 
   useEffect(() => {
     if (!view.ready) return;
-    if (view.status === "unlocked") router.replace(next);
+    if (view.status === "unlocked" && !unlocking.current) router.replace(next);
     if (view.status === "empty") return;
-    void readMeta(view.network).then((meta) => setHasPasskey(Boolean(meta?.credentialId && meta.prfWrap)));
-  }, [view.ready, view.status, view.network, router, next]);
+    void readMeta(view.network).then((meta) => {
+      setHasPasskey(Boolean(meta?.credentialId && meta.prfWrap));
+      if (meta) signal({ type: "warn", attemptsLeft: config.pinMaxAttempts - meta.failedAttempts });
+    });
+  }, [view.ready, view.status, view.network, router, next, signal]);
+
+  useEffect(() => clearDoorIntent(), []);
+
+  // The session is already open when the door starts opening; only the route change waits for it.
+  useEffect(() => {
+    if (door.phase === "unsealed") router.replace(next);
+  }, [door.phase, router, next]);
 
   async function unlockPin() {
     setBusy("Deriving key…");
     setError("");
+    setWrong(false);
+    unlocking.current = true;
     try {
-      await unlockWithPin(view.network, pin);
-      setPin("");
-      router.replace(next);
+      await door.track(() => unlockWithPin(view.network, pin));
+      setBusy("Unlocked.");
     } catch (cause) {
+      unlocking.current = false;
       setError(errorText(cause));
+      setWrong(cause instanceof PinError);
+      setBusy("");
       if (cause instanceof PinError && cause.wiped) router.push("/restore");
     } finally {
-      setBusy("");
+      setPin("");
     }
   }
 
   async function unlockFinger() {
     setBusy("Waiting for fingerprint…");
     setError("");
+    setWrong(false);
     try {
       const meta = await readMeta(view.network);
       if (!meta?.credentialId) throw new Error("Fingerprint unlock is not set.");
       const prf = await unlockPasskey(meta.credentialId);
-      await unlockWithPasskey(view.network, prf);
-      router.replace(next);
+      unlocking.current = true;
+      await door.track(() => unlockWithPasskey(view.network, prf));
+      setBusy("Unlocked.");
     } catch (cause) {
+      unlocking.current = false;
       setError(errorText(cause));
-    } finally {
       setBusy("");
     }
   }
+
+  const pinStatus =
+    door.phase === "opening" || door.phase === "unsealed"
+      ? "ok"
+      : busy === "Deriving key…"
+        ? "busy"
+        : wrong && !pin
+          ? "error"
+          : "idle";
 
   if (!view.ready) return <Page narrow><p className="text-muted">Checking this device…</p></Page>;
 
@@ -91,15 +127,36 @@ export function UnlockFlow() {
     <Page narrow>
       <PageIntro kicker={view.network} title="Unlock" lede="The key is derived on this device. The PIN is not sent anywhere." />
       <Panel>
+        <div className="mb-6 flex justify-center">
+          <VaultDoor phase={door.phase} warn={door.warn} />
+        </div>
         {hasPasskey && passkeySupported() ? (
           <Button className="mb-5 w-full" disabled={Boolean(busy)} onClick={() => void unlockFinger()}>
             Unlock with fingerprint
           </Button>
         ) : null}
-        <PinPad value={pin} onChange={setPin} length={config.pinLength} />
-        {busy ? <p className="mt-4 text-[13px] text-muted">{busy}</p> : null}
-        {error ? <p className="mt-4 text-[13px] text-danger">{error}</p> : null}
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mx-auto w-fit">
+          <PinPad
+            value={pin}
+            onChange={(value) => {
+              setPin(value);
+              setWrong(false);
+            }}
+            length={config.pinLength}
+            status={pinStatus}
+            disabled={Boolean(busy)}
+          />
+        </div>
+        <p className="mt-4 min-h-5 text-center text-[13px]" role="status">
+          {error ? (
+            <span className="text-danger">{error}</span>
+          ) : (
+            <span className={cx(!busy && door.warn ? "text-warn" : "text-muted")}>
+              {busy || (door.warn ? "One try left. Another wrong PIN erases this vault." : intent && !pin ? doorIntentText(intent) : "")}
+            </span>
+          )}
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button disabled={Boolean(busy) || pin.length !== config.pinLength} onClick={() => void unlockPin()}>
             Unlock
           </Button>

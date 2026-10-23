@@ -9,6 +9,8 @@ import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
+import { ProofButton } from "@/components/ui/ProofButton";
+import { useForge } from "@/lib/fx/useForge";
 
 export function AgentsScreen() {
   const { view } = useVault();
@@ -19,6 +21,7 @@ export function AgentsScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
+  const forge = useForge();
 
   async function fund() {
     const session = readSession();
@@ -29,7 +32,7 @@ export function AgentsScreen() {
     try {
       const zats = parseZec(amount);
       const key = noteKey.trim() ? fromHex(noteKey.trim()) : undefined;
-      await session.client.fund(ZEC, BigInt(pk.trim()), zats, key);
+      await forge.track(() => session.client.fund(ZEC, BigInt(pk.trim()), zats, key));
       setName("");
     } catch (cause) {
       setFunds(isFundsError(cause));
@@ -52,7 +55,7 @@ export function AgentsScreen() {
         <p className="mt-3 text-[13px] text-faint">Services this key can call: {SERVICES.map((service) => service.name).join(", ")}.</p>
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button disabled={busy || !pk.trim()} onClick={() => void fund()}>{busy ? "Proving…" : "Transfer"}</Button>
+          <ProofButton phase={forge.phase} label="Transfer" settledLabel="Moved" disabled={busy || !pk.trim()} onClick={() => void fund()} />
           {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
         </div>
       </Panel>

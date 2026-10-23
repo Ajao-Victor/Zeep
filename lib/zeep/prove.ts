@@ -7,9 +7,28 @@ type Reply =
 
 type ProveResult = Awaited<ReturnType<ProveFn>>;
 
+/** "start" when a proof is handed to the worker, "end" when it comes back (proved or failed). */
+export type ProofEvent = "start" | "end";
+
 let worker: Worker | null = null;
 let ready: Promise<void> | null = null;
 const waiters = new Map<string, { resolve: (value: Reply) => void; reject: (error: Error) => void }>();
+const listeners = new Set<(event: ProofEvent) => void>();
+
+/**
+ * Subscribe to the prover's real start and end edges (the Forge animation listens here).
+ * Every proof emits, including merges and refills inside one `client.pay`. Returns the unsubscribe.
+ */
+export function onProof(listener: (event: ProofEvent) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function emit(event: ProofEvent) {
+  for (const listener of [...listeners]) listener(event);
+}
 
 function call(body: { type: string; [key: string]: unknown }): Promise<Reply> {
   if (!worker) throw new Error("The proof worker is not running.");
@@ -57,7 +76,13 @@ export function stopProver() {
 
 export const workerProve: ProveFn = async (input) => {
   await startProver();
-  const result = await call({ type: "prove", input });
+  emit("start");
+  let result: Reply;
+  try {
+    result = await call({ type: "prove", input });
+  } finally {
+    emit("end");
+  }
   if (!result.ok || !result.proof || !result.publicSignals) {
     throw new Error(result.ok ? "The prover returned an empty proof." : result.error);
   }

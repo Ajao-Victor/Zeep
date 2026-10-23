@@ -4,6 +4,7 @@ import type { Chat } from "@/lib/chat/types";
 import { messageText } from "@/lib/chat/types";
 import { cx } from "@/lib/cx";
 import { Button } from "@/components/Button";
+import { Input } from "@/components/ui/Input";
 
 const GROUPS = ["Today", "Yesterday", "Previous 7 days", "Older"] as const;
 
@@ -44,11 +45,12 @@ export function Sidebar({
         <Button variant="secondary" size="sm" onClick={onNew}>
           New chat
         </Button>
-        <input
+        <Input
+          type="search"
           value={query}
           onChange={(event) => onQuery(event.target.value)}
           placeholder="Search chats"
-          className="w-full rounded-lg border border-line bg-bg px-3 py-2 text-[14px] outline-none placeholder:text-faint"
+          aria-label="Search chats"
         />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">

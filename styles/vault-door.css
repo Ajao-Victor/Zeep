@@ -1,0 +1,386 @@
+/* The Vault Door (components/fx/VaultDoor.tsx): the ceremony around the user's secrets. data-phase
+   follows lib/fx/door.ts. Three concentric rings carry the colour story from the outside in:
+   identity (outer), proof gold (middle), anonymous white (inner). Their index ticks line up when
+   the door is unlocked or sealed. Six bolts sit in the frame, and a seam runs through the leaf.
+
+   Only transform and opacity animate (the masks and gradients are painted once), so the browser
+   composites it off the main thread while Argon2id holds 64 MiB in a worker. The turning loops
+   tick in steps, all every 100 ms, so the compositor draws 10 frames a second, not 60.
+   data-still (reduced motion, or FX off) drops every movement: phases cross-fade instead. */
+
+.door {
+  --door: 168px;
+  --frame: calc(var(--door) * 0.07);
+  position: relative;
+  width: var(--door);
+  height: var(--door);
+  flex: none;
+}
+
+/* Phones: a smaller door keeps the PIN pad and its Unlock button above the fold. */
+@media (max-width: 480px) {
+  .door {
+    --door: 132px;
+  }
+}
+
+/* The fixed frame the leaf sits in: glass, with depth from an inset shadow. */
+.door-frame {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, var(--raised), var(--void) 75%);
+  box-shadow:
+    var(--elev-2),
+    inset 0 0 0 1px var(--line-strong),
+    inset 0 2px 1px rgb(255 255 255 / 0.06),
+    inset 0 -10px 24px rgb(0 0 0 / 0.5);
+}
+
+/* The vault's interior: anonymous white light, seen when the leaf swings open. */
+.door-light {
+  position: absolute;
+  inset: var(--frame);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(244 242 238 / 0.62), var(--anon-glow) 42%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--curve-move);
+}
+
+.door-stage {
+  position: absolute;
+  inset: var(--frame);
+  perspective: calc(var(--door) * 4);
+}
+
+.door-leaf {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #2b2a26, #141310 70%);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 6px 18px -6px rgb(0 0 0 / 0.8);
+  transform-origin: 0% 50%;
+  transform: rotateY(0deg);
+  transition:
+    transform var(--dur-slow) var(--curve-move),
+    opacity var(--dur-base) linear;
+}
+
+/* A ring rotates as one: its notched band and its index tick turn together. */
+.door-ring {
+  --w: 6px;
+  position: absolute;
+  inset: var(--inset);
+  transform: rotate(var(--rest));
+  transition: transform var(--dur-slow) cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.door-band {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--fill);
+  /* A ring of notched segments: the radial mask cuts the band, the conic mask cuts the notches. */
+  -webkit-mask:
+    radial-gradient(farthest-side, transparent calc(100% - var(--w) - 0.5px), #000 calc(100% - var(--w))),
+    repeating-conic-gradient(#000 0deg calc(var(--step) - 3deg), transparent calc(var(--step) - 3deg) var(--step));
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - var(--w) - 0.5px), #000 calc(100% - var(--w))),
+    repeating-conic-gradient(#000 0deg calc(var(--step) - 3deg), transparent calc(var(--step) - 3deg) var(--step));
+  mask-composite: intersect;
+}
+
+.door-ring-outer {
+  --inset: 6%;
+  --rest: 47deg;
+  --dir: 1;
+  --turn: 15deg;
+  --step: 15deg;
+  --steps: 24;
+  --fill: conic-gradient(var(--id-1), var(--id-2), var(--id-3), var(--id-4), var(--id-5), var(--id-6), var(--id-1));
+}
+
+.door-ring-middle {
+  --inset: 19%;
+  --rest: -71deg;
+  --dir: -1;
+  --turn: 20deg;
+  --step: 20deg;
+  --steps: 18;
+  --w: 5px;
+  --fill: conic-gradient(var(--gold-deep), var(--gold-hover), var(--gold), var(--gold-deep));
+}
+
+.door-ring-inner {
+  --inset: 31%;
+  --rest: 128deg;
+  --dir: 1;
+  --turn: 30deg;
+  --step: 30deg;
+  --steps: 12;
+  --w: 4px;
+  --fill: rgb(244 242 238 / 0.85);
+}
+
+/* Each ring's index tick. Rings are unlocked or sealed when the three ticks line up at the top. */
+.door-tick {
+  position: absolute;
+  inset: 0;
+}
+
+.door-tick::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 3px;
+  height: 10px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--anon);
+  box-shadow: 0 0 6px var(--anon-glow);
+}
+
+.door-seam {
+  position: absolute;
+  top: 12%;
+  bottom: 12%;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+  transform: scaleY(1);
+  transition:
+    transform var(--dur-slow) var(--curve-enter),
+    opacity var(--dur-base) linear;
+}
+
+/* The warn and danger seams are separate layers, so colour changes cross-fade on opacity. */
+.door-seam-warn,
+.door-seam-danger {
+  opacity: 0;
+}
+
+.door-seam-warn {
+  background: var(--warn);
+  box-shadow: 0 0 8px var(--warn);
+}
+
+.door-seam-danger {
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
+}
+
+.door-hub {
+  position: absolute;
+  inset: 43%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--gold-hover), var(--gold-deep));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+.door-bolt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* 6 x 12 px at the full 168 px door, scaled with it. */
+  width: calc(var(--door) * 0.036);
+  height: calc(var(--door) * 0.072);
+  margin: calc(var(--door) * -0.036) 0 0 calc(var(--door) * -0.018);
+  border-radius: 2px;
+  background: linear-gradient(var(--gold-hover), var(--gold-deep));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45);
+  /* Thrown: reaching into the leaf. */
+  transform: rotate(var(--angle)) translateY(calc(var(--door) * -0.43 + 2px));
+  transition: transform var(--dur-base) var(--curve-move) var(--bolt-delay, 0ms);
+}
+
+/* ---- Phases ---- */
+
+/* Open (a vault not yet sealed) and unsealed (just unlocked): leaf swung, bolts withdrawn,
+   rings aligned, the interior lit. */
+.door[data-phase="open"] .door-leaf,
+.door[data-phase="unsealed"] .door-leaf {
+  transform: rotateY(-78deg);
+}
+
+.door[data-phase="open"] .door-light,
+.door[data-phase="opening"] .door-light,
+.door[data-phase="unsealed"] .door-light {
+  opacity: 1;
+}
+
+.door[data-phase="open"] .door-bolt,
+.door[data-phase="sealing"] .door-bolt,
+.door[data-phase="opening"] .door-bolt,
+.door[data-phase="unsealed"] .door-bolt {
+  transform: rotate(var(--angle)) translateY(calc(var(--door) * -0.5 + 4px));
+}
+
+.door[data-phase="open"] .door-seam,
+.door[data-phase="sealing"] .door-seam {
+  transform: scaleY(0);
+}
+
+/* Aligned rings: unlocked, opening, sealed, and the open vault before sealing. */
+.door[data-phase="open"] .door-ring,
+.door[data-phase="opening"] .door-ring,
+.door[data-phase="unsealed"] .door-ring,
+.door[data-phase="sealed"] .door-ring {
+  transform: rotate(0deg);
+}
+
+/* Deriving and sealing: the rings turn while the Argon2id worker runs. One tick every 100 ms. */
+.door[data-phase="deriving"] .door-ring,
+.door[data-phase="sealing"] .door-ring {
+  animation: door-turn calc(360deg / var(--turn) * 100ms) steps(var(--steps)) infinite;
+}
+
+.door[data-phase="deriving"] .door-seam,
+.door[data-phase="sealing"] .door-seam {
+  box-shadow: 0 0 14px var(--gold);
+}
+
+/* Opening: rings snap into line, the bolts withdraw, the seam goes white, then the leaf swings. */
+.door[data-phase="opening"] .door-bolt {
+  --bolt-delay: 180ms;
+}
+
+.door[data-phase="opening"] .door-seam {
+  opacity: 0;
+  transition-delay: 300ms;
+}
+
+.door[data-phase="opening"] .door-leaf {
+  transform: rotateY(-78deg);
+  transition: transform 480ms var(--curve-move) 380ms;
+}
+
+/* Sealed: the rings align first, then the bolts slide in, then the gold seam closes. */
+.door[data-phase="sealed"] .door-bolt {
+  --bolt-delay: 260ms;
+}
+
+.door[data-phase="sealed"] .door-seam {
+  transition-delay: 520ms;
+}
+
+.door[data-phase="sealed"] .door-frame {
+  box-shadow:
+    var(--elev-gold),
+    inset 0 0 0 1px var(--line-strong),
+    inset 0 -10px 24px rgb(0 0 0 / 0.5);
+}
+
+/* Rejected: the rings jolt back and the seam flashes danger. */
+.door[data-phase="rejected"] .door-ring {
+  animation: door-jolt 520ms var(--curve-move);
+}
+
+.door[data-phase="rejected"] .door-seam-danger {
+  animation: door-flash 520ms linear;
+}
+
+/* Closing (lock, auto-lock, network switch): the leaf swings shut, the bolts are thrown, and the
+   rings scramble away from alignment. Keyframes, because the door mounts already closing. */
+.door[data-phase="closing"] .door-leaf {
+  animation: door-shut 520ms var(--curve-move) both;
+}
+
+.door[data-phase="closing"] .door-light {
+  animation: door-dim 520ms linear both;
+}
+
+.door[data-phase="closing"] .door-bolt {
+  animation: door-throw var(--dur-base) var(--curve-move) 440ms both;
+}
+
+.door[data-phase="closing"] .door-ring {
+  animation: door-scramble var(--dur-slow) cubic-bezier(0.34, 1.4, 0.64, 1) 420ms both;
+}
+
+.door[data-warn="true"] .door-seam-warn {
+  opacity: 1;
+}
+
+.door[data-phase="wiped"] {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+@keyframes door-turn {
+  from {
+    transform: rotate(var(--rest));
+  }
+  to {
+    transform: rotate(calc(var(--rest) + var(--dir) * 360deg));
+  }
+}
+
+@keyframes door-jolt {
+  30% {
+    transform: rotate(calc(var(--rest) + var(--dir) * 14deg));
+  }
+  65% {
+    transform: rotate(calc(var(--rest) - var(--dir) * 6deg));
+  }
+}
+
+@keyframes door-flash {
+  20%,
+  60% {
+    opacity: 1;
+  }
+}
+
+@keyframes door-shut {
+  from {
+    transform: rotateY(-78deg);
+  }
+}
+
+@keyframes door-dim {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes door-throw {
+  from {
+    transform: rotate(var(--angle)) translateY(calc(var(--door) * -0.5 + 4px));
+  }
+}
+
+@keyframes door-scramble {
+  from {
+    transform: rotate(0deg);
+  }
+}
+
+/* Still: no turning, swinging, sliding or jolting. The leaf fades instead of swinging, and the
+   phases still read through the light, the seam colours and the ring alignment. */
+.door[data-still="true"] *,
+.door[data-still="true"] *::before {
+  animation: none !important;
+  transition-property: opacity !important;
+}
+
+.door[data-still="true"][data-phase="open"] .door-leaf,
+.door[data-still="true"][data-phase="opening"] .door-leaf,
+.door[data-still="true"][data-phase="unsealed"] .door-leaf {
+  transform: none;
+  opacity: 0;
+}
+
+.door[data-still="true"][data-phase="rejected"] .door-seam-danger {
+  opacity: 1;
+}

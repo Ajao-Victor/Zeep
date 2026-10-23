@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { config, type Network } from "@/lib/config";
 import { formatCredits, formatUsd, formatZec, zatsToMicroUsd } from "@/lib/zeep";
 import type { PriceSheet } from "@/lib/zeep/prices";
+import { setDoorIntent, type DoorIntent } from "@/lib/fx/doorIntent";
 import { emit, readSession, subscribe } from "@/lib/vault/session";
 import { lockVault, readPrefs, switchNetwork, vaultStatus } from "@/lib/vault/vault";
 import { useToast } from "@/components/Toast";
@@ -26,7 +27,7 @@ export type VaultView = {
 
 const VaultContext = createContext<{
   view: VaultView;
-  lock: () => Promise<void>;
+  lock: (reason?: Exclude<DoorIntent["reason"], "switch">) => Promise<void>;
   chooseNetwork: (network: Network) => Promise<void>;
   refresh: () => Promise<void>;
 } | null>(null);
@@ -112,17 +113,26 @@ export function VaultState({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [view.status, view.network]);
 
-  const lock = useCallback(async () => {
-    await lockVault();
-    router.push("/unlock");
-  }, [router]);
+  // The session is cleared first; only then does /unlock play the Vault Door closing.
+  const lock = useCallback(
+    async (reason: Exclude<DoorIntent["reason"], "switch"> = "lock") => {
+      await lockVault();
+      setDoorIntent({ reason });
+      router.push("/unlock");
+    },
+    [router],
+  );
 
   const chooseNetwork = useCallback(
     async (network: Network) => {
       if (network === view.network && view.ready) return;
       await switchNetwork(network);
       const status = await vaultStatus(network);
-      if (status === "locked") router.push("/unlock");
+      // Only /unlock plays the door, so only record the switch when that is where we are going.
+      if (status === "locked") {
+        setDoorIntent({ reason: "switch", network });
+        router.push("/unlock");
+      }
       else if (status === "wiped") router.push("/restore");
       else router.push("/get");
     },
@@ -132,19 +142,19 @@ export function VaultState({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (view.status !== "unlocked") return;
     let timer = window.setTimeout(() => {
-      void lock().then(() => toast("Locked after inactivity.", "warn"));
+      void lock("idle").then(() => toast("Locked after inactivity.", "warn"));
     }, config.autolockSec * 1000);
     const reset = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        void lock().then(() => toast("Locked after inactivity.", "warn"));
+        void lock("idle").then(() => toast("Locked after inactivity.", "warn"));
       }, config.autolockSec * 1000);
     };
     let hiddenAt = 0;
     const onShow = () => {
       if (document.hidden) hiddenAt = Date.now();
       else if (hiddenAt && Date.now() - hiddenAt > 60_000) {
-        void lock().then(() => toast("Locked because this tab was hidden.", "warn"));
+        void lock("hidden").then(() => toast("Locked because this tab was hidden.", "warn"));
       }
     };
     window.addEventListener("pointerdown", reset);

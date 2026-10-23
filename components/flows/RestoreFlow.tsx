@@ -106,6 +106,7 @@ export function RestoreFlow() {
               <TextField
                 key={index}
                 label={`${index + 1}`}
+                secret
                 value={word}
                 autoComplete="off"
                 onChange={(value) => fillWords(index, value)}
