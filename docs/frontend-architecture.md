@@ -13,15 +13,22 @@ The user has two private balances, and the app shows them as one number:
 
 **Credits** are the display of both together: dollars plus ZEC at the live price. The default is 1 credit = $1 (`micro_usd_per_credit` = 1,000,000). The header shows the total. The split appears only in the header tooltip and on the balance screen. The treasury (USDC, bridges, the EVM wallet) stays on the backend. None of it is named or called from this app.
 
-**Design direction: Vault.** A dark-first interface: near-black background, warm off-white text, one gold accent for actions and balances, and monospace numbers for anything counted. Panels have thin borders and no shadows, gradients, glow or emoji. The tone is a security tool.
+**Design direction: Vault, Obsidian edition.** A dark-first interface: near-black background, warm off-white text, one gold accent for actions and balances, and monospace numbers for anything counted. Depth comes from glass surfaces, a lit top edge and soft elevation, not from new hues. The tone is a security tool. Colour tells one story everywhere: things arrive in **identity colours** (six muted hues, used only before the proof), pass through **gold** (the proof) and leave **anonymous white**. The full specification is `docs/futuristic-design-spec.md`.
 
-**Landing page.** New visitors land on a page with one live element: an animated panel where coloured dots pass through a gold proof gate and leave as identical white dots routed to the five services. The dots move away from the cursor and the gate brightens on hover. The animation stops when the user prefers reduced motion.
+**Three signature moments** get the motion budget, and everything else stays quiet:
+
+- **The Proof Gate** (landing hero). A live three.js scene: coloured requests funnel into a rotating gold lattice and leave as white points along five lanes to the services. See "Motion and signature moments".
+- **The Forge** (every paid request). The Send/Search/Call/… button turns into a small gold forge driven by the real proof.
+- **The Vault Door** (create, unlock, lock, network switch). A CSS 3D door that turns while Argon2id derives the key and opens, seals or closes on the real outcome.
+
+**Landing page.** New visitors see the Proof Gate beside the hero, with a glass "What Zeep sees" panel over its lower part (labelled "simulated live"). Requests move away from the cursor, the camera tilts slightly with it and the gate pulses on click. The scene picks a quality tier per device and falls back to a 2D canvas or a still poster.
 
 **What the frontend must guarantee**
 
 - The recovery phrase, PIN and spend key never leave the device.
 - Testnet and mainnet are separate vaults. The toggle is always visible, and switching locks the current vault.
 - Each request's proof is built in a Web Worker so the UI stays responsive.
+- Motion tells the truth: the Forge and the Vault Door react only to real proof, key-derivation and vault events, never to timers, and no animation may slow the cryptography (see "Rules for contributors").
 - No third-party scripts, analytics or trackers.
 - The page is cross-origin isolated, so the in-app Zcash wallet can use threads.
 
