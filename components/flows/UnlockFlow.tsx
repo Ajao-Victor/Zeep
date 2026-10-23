@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { config } from "@/lib/config";
 import { cx } from "@/lib/cx";
 import { errorText } from "@/lib/format";
@@ -15,6 +15,12 @@ import { PinPad } from "@/components/PinPad";
 import { VaultDoor } from "@/components/fx/VaultDoor";
 import { useVault } from "@/components/Providers";
 
+// Read at redirect time rather than through useSearchParams, which would force a Suspense boundary
+// around the page and prerender only its "Loading…" fallback instead of the Vault Door.
+function nextRoute(): string {
+  return safeNext(new URLSearchParams(window.location.search).get("next"));
+}
+
 function safeNext(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return "/services";
   return value;
@@ -23,8 +29,6 @@ function safeNext(value: string | null): string {
 export function UnlockFlow() {
   const { view } = useVault();
   const router = useRouter();
-  const params = useSearchParams();
-  const next = safeNext(params.get("next"));
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
@@ -39,20 +43,20 @@ export function UnlockFlow() {
 
   useEffect(() => {
     if (!view.ready) return;
-    if (view.status === "unlocked" && !unlocking.current) router.replace(next);
+    if (view.status === "unlocked" && !unlocking.current) router.replace(nextRoute());
     if (view.status === "empty") return;
     void readMeta(view.network).then((meta) => {
       setHasPasskey(Boolean(meta?.credentialId && meta.prfWrap));
       if (meta) signal({ type: "warn", attemptsLeft: config.pinMaxAttempts - meta.failedAttempts });
     });
-  }, [view.ready, view.status, view.network, router, next, signal]);
+  }, [view.ready, view.status, view.network, router, signal]);
 
   useEffect(() => clearDoorIntent(), []);
 
   // The session is already open when the door starts opening; only the route change waits for it.
   useEffect(() => {
-    if (door.phase === "unsealed") router.replace(next);
-  }, [door.phase, router, next]);
+    if (door.phase === "unsealed") router.replace(nextRoute());
+  }, [door.phase, router]);
 
   async function unlockPin() {
     setBusy("Deriving key…");
@@ -100,9 +104,11 @@ export function UnlockFlow() {
           ? "error"
           : "idle";
 
-  if (!view.ready) return <Page narrow><p className="text-muted">Checking this device…</p></Page>;
+  // Until the vault status is read, show the closed door with the pad disabled: it is what a
+  // locked device (by far the common case here) looks like, so nothing flashes or reflows.
+  const checking = !view.ready;
 
-  if (view.status === "empty") {
+  if (view.ready && view.status === "empty") {
     return (
       <Page narrow>
         <PageIntro title="No pass on this device" lede={`Nothing is stored for ${view.network}.`} />
@@ -111,7 +117,7 @@ export function UnlockFlow() {
     );
   }
 
-  if (view.status === "wiped") {
+  if (view.ready && view.status === "wiped") {
     return (
       <Page narrow>
         <PageIntro title="Vault erased" />
@@ -144,7 +150,7 @@ export function UnlockFlow() {
             }}
             length={config.pinLength}
             status={pinStatus}
-            disabled={Boolean(busy)}
+            disabled={Boolean(busy) || checking}
           />
         </div>
         <p className="mt-4 min-h-5 text-center text-[13px]" role="status">
@@ -152,12 +158,12 @@ export function UnlockFlow() {
             <span className="text-danger">{error}</span>
           ) : (
             <span className={cx(!busy && door.warn ? "text-warn" : "text-muted")}>
-              {busy || (door.warn ? "One try left. Another wrong PIN erases this vault." : intent && !pin ? doorIntentText(intent) : "")}
+              {busy || (checking ? "Checking this device…" : door.warn ? "One try left. Another wrong PIN erases this vault." : intent && !pin ? doorIntentText(intent) : "")}
             </span>
           )}
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Button disabled={Boolean(busy) || pin.length !== config.pinLength} onClick={() => void unlockPin()}>
+          <Button disabled={Boolean(busy) || checking || pin.length !== config.pinLength} onClick={() => void unlockPin()}>
             Unlock
           </Button>
           <Button href="/restore" variant="secondary">Restore with words</Button>
