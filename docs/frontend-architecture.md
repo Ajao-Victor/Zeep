@@ -48,7 +48,9 @@ Every library runs in the browser and is bundled at build time. Nothing is loade
 | Styling | Tailwind CSS v4, driven by the Vault tokens | One source of colours |
 | UI primitives | Radix UI (dialog, dropdown, tooltip, tabs) | Accessible behaviour without a visual style to fight |
 | Fonts | Inter and JetBrains Mono, self-hosted via `next/font` | No request to Google at runtime |
-| Landing animation | Plain `<canvas>` + `requestAnimationFrame` | Small; respects reduced motion |
+| Proof Gate (landing 3D) | `three` 0.186.1 + `@react-three/fiber` 9.8.2, exact pins | A lazy chunk (about 245 kB gzipped) fetched only on capable devices after first paint. Everything is generated in code: no models, textures, HDRIs, fonts or decoders to host. No drei, postprocessing or Motion (several drei helpers fetch from CDNs) |
+| Proof Gate fallbacks | 2D `<canvas>` (tier 1) and a seeded SVG poster (tier 0) | Weak devices, no hardware WebGL2, reduced motion, data saver or FX off |
+| The Forge and the Vault Door | Plain CSS (transforms, opacity, masks) driven by `data-phase` | No canvas, WebGL or JS frame loop, so they cost nothing next to the prover and Argon2id workers |
 | Spend proofs | `snarkjs` Groth16 in a Web Worker, `poseidon-lite` for note hashes | Same circuit the backend verifies |
 | PIN hardening | `hash-wasm` Argon2id | Memory-hard key derivation in the browser |
 | Encryption | WebCrypto AES-GCM (256-bit) | Note backups, the vault record, and chats |
@@ -61,7 +63,7 @@ Every library runs in the browser and is bundled at build time. Nothing is loade
 | Attachments | `pdfjs-dist` in its worker; images downscaled on a canvas | Files travel only inside the paid chat request |
 | API client | `fetch` + `zod` for public responses; the Zeep client for paid ones | OpenAI-style SSE for chat |
 | Server state | TanStack Query | Public data such as the reserve books |
-| Tests | Vitest | Units for credits, the deposit estimate, addresses, ZIP 321 and the phrase quiz |
+| Tests | Vitest | Units for credits, the deposit estimate, addresses, ZIP 321, the phrase quiz, motion-token drift, rendering tiers, and the Forge and Vault Door phase machines |
 
 ## Routes and screens
 
