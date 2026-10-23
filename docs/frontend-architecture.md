@@ -133,6 +133,54 @@ Also in `styles/tokens.css`: elevation (`--elev-1`, `--elev-2`, `--elev-gold`), 
 
 **Motion.** Instrument UI stays under `--dur-base` (buttons lift 1 px and change colour in 150 ms). Only the three signature moments use long or looping motion, described in the next section. Everything honours `prefers-reduced-motion` and `NEXT_PUBLIC_FX_LEVEL=off`.
 
+## Motion and signature moments
+
+Each moment uses the lightest technology that can carry it. Only the landing page runs WebGL. App routes never load three.js.
+
+### The Proof Gate (landing, three.js)
+
+`components/landing/ProofGateHero.tsx` puts `components/fx/proof-gate/SceneFrame.tsx` behind the glass "What Zeep sees" panel. Every tier reads one layout (`proof-gate/layout.ts`), so the DOM lane labels line up with whatever draws.
+
+**Tiers** (`lib/fx/tier.ts`, tested):
+
+| Tier | What draws | Chosen when |
+| --- | --- | --- |
+| 0 Still | `Poster.tsx`, a seeded SVG | Reduced motion, data saver, or `NEXT_PUBLIC_FX_LEVEL=off` |
+| 1 Lite | `LiteScene.tsx`, a 2D canvas | `FX_LEVEL=lite`, no hardware WebGL2 (probed with `failIfMajorPerformanceCaveat`), 2 GB of memory or less, or a touch device with 4 cores or fewer |
+| 2 Standard | `Scene3D.tsx`: 1,400 points, 16 bokeh lights, pixel ratio up to 1.5 | Other capable devices |
+| 3 Ultra | 4,200 points with two trail echoes, 28 bokeh lights, antialiasing, pixel ratio up to 2 | Desktop (fine pointer, at least 1024 px), 8+ cores, 8 GB+ |
+
+**Lifecycle**
+
+- `Scene3D` is a `next/dynamic` import with `ssr: false`, requested after `requestIdleCallback` and only for tiers 2 and 3. The poster shows until the first WebGL frame. The landing page's first-load JS stays at about 114 kB, and the 3D chunks are about 245 kB gzipped (budget 250 kB).
+- The scene renders only while it is on screen and the tab is visible (`IntersectionObserver` and `visibilitychange` set R3F's `frameloop` to `"never"`).
+- Sustained frame rate is sampled in 2 s windows. Below 50 fps tier 3 steps down to 2, and below 30 fps tier 2 steps down to 1 (one-way). A lost WebGL context falls back to the poster.
+- **Unmount.** Leaving the page unmounts the R3F root, which disposes the scene graph and the renderer and calls `forceContextLoss()`. Our components also dispose their own buffer geometries and the generated PMREM environment, and remove their pointer listeners and observers. Audited in headless Chrome: after 20 landing round trips (more than Chrome's 16 live-context limit) there were no context warnings, one canvas and one context left reachable (the same as after 3 trips), no three.js renderers, and window and document listener counts back at their baseline.
+- **Shader rules learned the hard way.** Every custom fragment shader ends with `#include <colorspace_fragment>`. `smoothstep` edges must be ascending (a reversed call draws nothing on ANGLE/Metal). R3F copies a `uniforms` prop into the material, so per-frame updates go through the material ref, not the object passed in.
+
+### The Forge (paid buttons, CSS ratchet)
+
+`components/ui/ProofButton.tsx` hosts `components/fx/Forge.tsx` on Search, Look up, Call, Open an inbox, Transfer, Withdraw (direct withdrawals) and chat Send.
+
+- **Signals.** `lib/zeep/prove.ts` (the app's worker bridge, not the copied SDK) emits `onProof` "start" and "end" around every proof posted to `workers/spend.worker.ts`. `lib/fx/useForge.ts` wraps one paid call in `track()`, listens only for that call's lifetime, and feeds the pure, tested reducer in `lib/fx/forge.ts`.
+- **Phases.** preparing (dark, identity motes gather) → proving (gold, the motes converge into a hexagonal lattice; it spins again for every real proof) → sending (a white mote leaves) → settled (white with a drawn check) or failed (a shake). The outcome stays visible for 1.4 s or 0.9 s, which is the only timer.
+- **Why a ratchet.** Smooth CSS loops are composited, but they still made the compositor draw 61 frames a second, and with the prover on every core that slowed real proofs by about 18%. The lattice and the mote orbit now tick in steps (`steps(24)` over 2.4 s, 10 changes a second), so the compositor draws 10 frames a second. A randomised A/B of the identical proof then measured within noise.
+- **Layout and access.** Every label shares one grid cell, so the width never changes. `Button busy` keeps full colour while disabled. A polite live region announces "Proving" and the settled label.
+
+### The Vault Door (create, unlock, lock, switch; CSS 3D)
+
+`components/fx/VaultDoor.tsx` with `styles/vault-door.css`: a glass frame with six bolts, a leaf that swings on a left hinge under `perspective`, three notched rings (identity outside, gold in the middle, white inside) whose index ticks line up when unlocked or sealed, and a seam with warn and danger layers.
+
+- **Signals.** `lib/vault/kdf.ts` emits `onKdf` "start" and "end" around every Argon2id run. `lib/fx/useVaultDoor.ts` wraps a vault call (`unlockWithPin`, `unlockWithPasskey`, `createVault`) and feeds the tested reducer in `lib/fx/door.ts` with `PinError`'s `attemptsLeft` and `wiped`.
+- **Unlock.** The door is closed above the `PinPad`. The rings turn exactly while the worker derives. On success the session is already open, then the rings align, the bolts withdraw and the leaf swings, and only the route change waits (0.9 s, or none under reduced motion). A wrong PIN jolts the rings, and the dots turn red and shake. At one try left the seam turns `--warn` (restored from the stored count and also written as text). The wipe greys the door out.
+- **Create.** The door stands open during PIN entry, shuts and turns while `createVault` runs, then seals (rings align, bolts in, gold seam), and the flow moves to Deposit.
+- **Lock, auto-lock, network switch.** The session is cleared first. Then `lib/fx/doorIntent.ts` records why, and `/unlock` mounts the door "closing" and writes the reason. Auto-lock therefore always wins, and the ceremony never delays it. `/unlock` is prefetched while unlocked and has no Suspense boundary, so the door is in the first paint (measured at 11–48 ms from Lock in production).
+- **Cost.** The same 100 ms-tick rule as the Forge: about 11 frames a second for one door, and the real Argon2id derivation measured 573 ms without the door versus 580 ms with it turning. Keep it to one door per screen: eleven turning at once slowed derivation by half.
+
+**PIN pad.** Glass keys with the same subtle dim on every press and no hover lift or glow, so nothing points at the digit pressed. Confirmation happens on the dot row (gold → red and a shake → white). It locks while deriving and has an optional identical 8 ms vibration.
+
+**Reduced motion and FX off.** The Proof Gate shows the poster. The Forge and the door drop all spins, swings, slides and shakes and cross-fade between phases. Outcome holds are skipped, so nothing waits on an animation the user cannot see.
+
 ## Two balances
 
 `client.balances()` returns `{ usd, zec }` in micro-USD and zatoshis. `client.totalMicroUsd(zecUsd)` adds the ZEC at the price from `GET /v1/prices`. The header formats that with `formatCredits` and refreshes it on the price interval.
