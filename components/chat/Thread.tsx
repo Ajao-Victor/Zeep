@@ -7,14 +7,14 @@ import { FileChip } from "@/components/chat/FileChip";
 export function Thread({ messages, modelName }: { messages: ChatMessage[]; modelName: (id: string) => string }) {
   if (!messages.length) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 text-center">
         <p className="text-[15px] text-text">No identity on this chat.</p>
         <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-muted">The proof shows the payment, not who you are. This history stays on this device.</p>
       </div>
     );
   }
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
       {messages.map((message, index) => {
         const images = Array.isArray(message.content) ? message.content.filter((part) => part.type === "image_url") : [];
         const files = Array.isArray(message.content) ? message.content.filter((part) => part.type === "file") : [];

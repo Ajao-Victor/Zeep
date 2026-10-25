@@ -286,7 +286,7 @@ export function ChatScreen() {
   );
 
   return (
-    <div className="relative flex h-[calc(100dvh-6.5rem)] min-h-0 overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
       <aside className="hidden w-12 shrink-0 flex-col items-center border-r border-line bg-surface py-3 sm:flex lg:hidden">
         <IconButton
           variant="glass"
@@ -304,7 +304,7 @@ export function ChatScreen() {
       {historyOpen ? (
         <aside className="hidden w-[272px] shrink-0 border-r border-line bg-surface sm:block lg:hidden">{sidebar}</aside>
       ) : null}
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-line px-3 py-2 sm:hidden">
           <Dialog.Root open={drawer} onOpenChange={setDrawer}>
             <Dialog.Trigger asChild>
@@ -325,26 +325,28 @@ export function ChatScreen() {
         </header>
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
           <Thread messages={active?.messages ?? []} modelName={(id) => view.prices?.models.find((item) => item.id === id)?.name || id} />
-          {active ? <p className="px-4 pb-1 text-center text-[12px] text-faint">Zeep sees the prompt, not who sent it.</p> : null}
-          {funds ? (
-            <div className="px-4">
-              <Button href="/deposit" variant="secondary">Add funds</Button>
-            </div>
-          ) : null}
-          <Composer
-            value={draft}
-            onChange={setDraft}
-            onSend={() => void send()}
-            busy={busy}
-            phase={forge.phase}
-            modelId={modelId}
-            onModel={chooseModel}
-            prices={view.prices}
-            attachments={attachments}
-            onAttach={(files) => void attach(files)}
-            onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
-            hint={hint}
-          />
+          <div className="shrink-0">
+            {active ? <p className="px-4 pb-1 text-center text-[12px] text-faint">Zeep sees the prompt, not who sent it.</p> : null}
+            {funds ? (
+              <div className="px-4">
+                <Button href="/deposit" variant="secondary">Add funds</Button>
+              </div>
+            ) : null}
+            <Composer
+              value={draft}
+              onChange={setDraft}
+              onSend={() => void send()}
+              busy={busy}
+              phase={forge.phase}
+              modelId={modelId}
+              onModel={chooseModel}
+              prices={view.prices}
+              attachments={attachments}
+              onAttach={(files) => void attach(files)}
+              onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
+              hint={hint}
+            />
+          </div>
         </div>
       </section>
       <SettingsDialog

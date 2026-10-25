@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/components/Toast";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -11,6 +12,8 @@ export { useVault } from "@/components/VaultState";
 export type { VaultView } from "@/components/VaultState";
 
 export function Providers({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const chat = pathname === "/ai";
   const [client] = useState(
     () =>
       new QueryClient({
@@ -21,7 +24,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={client}>
       <ToastProvider>
         <VaultState>
-          <div className="flex min-h-screen flex-col">
+          <div className={chat ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-dvh flex-col"}>
             <a
               href="#content"
               className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-surface focus:px-3 focus:py-2"
@@ -29,7 +32,7 @@ export function Providers({ children }: { children: ReactNode }) {
               Skip to content
             </a>
             <SiteHeader />
-            <div id="content" className="flex-1">
+            <div id="content" className={chat ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex-1"}>
               {children}
             </div>
             <SiteFooter />
