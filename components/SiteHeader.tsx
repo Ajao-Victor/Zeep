@@ -7,7 +7,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { config } from "@/lib/config";
 import { cx } from "@/lib/cx";
-import { NetworkToggle } from "@/components/NetworkToggle";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { useVault } from "@/components/VaultState";
 import { Button } from "@/components/Button";
@@ -55,7 +54,7 @@ function onSectionLink(event: { preventDefault: () => void }, href: string) {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { view, chooseNetwork, lock } = useVault();
+  const { view, lock } = useVault();
   const inApp = APP.some(([href]) => pathname === href);
   const activeRef = useRef<HTMLAnchorElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -176,21 +175,6 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex-1" />
-        <Tooltip.Provider delayDuration={200}>
-          {view.network === "testnet" ? (
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <span className="hidden shrink-0 rounded border border-warn px-1.5 py-0.5 font-mono text-[11px] text-warn sm:inline">Testnet</span>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content className="z-40 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-text">
-                  A separate vault. Mainnet credits stay locked.
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-          ) : null}
-        </Tooltip.Provider>
-        <NetworkToggle network={view.network} onChange={(network) => void chooseNetwork(network)} />
         {view.status === "unlocked" ? (
           <div className="flex items-center gap-2 md:gap-1">
             <Tooltip.Provider delayDuration={200}>
@@ -250,6 +234,9 @@ export function SiteHeader() {
             ))}
           </nav>
         </div>
+      ) : null}
+      {config.network === "testnet" ? (
+        <div className="border-t border-warn/40 bg-surface px-4 py-2 text-center text-[13px] text-warn">Testnet: test ZEC only</div>
       ) : null}
       <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
     </header>

@@ -7,7 +7,7 @@ import { formatCredits, formatUsd, formatZec, zatsToMicroUsd } from "@/lib/zeep"
 import type { PriceSheet } from "@/lib/zeep/prices";
 import { setDoorIntent, type DoorIntent } from "@/lib/fx/doorIntent";
 import { emit, readSession, subscribe } from "@/lib/vault/session";
-import { lockVault, readPrefs, switchNetwork, vaultStatus } from "@/lib/vault/vault";
+import { lockVault, readPrefs, vaultStatus } from "@/lib/vault/vault";
 import { useToast } from "@/components/Toast";
 
 export type VaultView = {
@@ -28,7 +28,6 @@ export type VaultView = {
 const VaultContext = createContext<{
   view: VaultView;
   lock: (reason?: Exclude<DoorIntent["reason"], "switch">) => Promise<void>;
-  chooseNetwork: (network: Network) => Promise<void>;
   refresh: () => Promise<void>;
 } | null>(null);
 
@@ -72,7 +71,7 @@ function fromSession(network: Network): VaultView {
 }
 
 /**
- * Where a lock or a network switch goes: /unlock with `next` set to the current page. It is the
+ * Where a lock goes: /unlock with `next` set to the current page. It is the
  * same URL RequireVault redirects app routes to, so the page sees one navigation and /unlock
  * mounts once (a second navigation would remount it and drop the Vault Door's reason line).
  */
@@ -85,7 +84,7 @@ function unlockUrl(): string {
 export function VaultState({ children }: { children: ReactNode }) {
   const router = useRouter();
   const toast = useToast();
-  const [view, setView] = useState<VaultView>(() => blank(config.defaultNetwork));
+  const [view, setView] = useState<VaultView>(() => blank(config.network));
 
   const refresh = useCallback(async () => {
     const prefs = await readPrefs();
@@ -139,22 +138,6 @@ export function VaultState({ children }: { children: ReactNode }) {
     [router],
   );
 
-  const chooseNetwork = useCallback(
-    async (network: Network) => {
-      if (network === view.network && view.ready) return;
-      await switchNetwork(network);
-      const status = await vaultStatus(network);
-      // Only /unlock plays the door, so only record the switch when that is where we are going.
-      if (status === "locked") {
-        setDoorIntent({ reason: "switch", network });
-        router.push(unlockUrl());
-      }
-      else if (status === "wiped") router.push("/restore");
-      else router.push("/get");
-    },
-    [router, view.network, view.ready],
-  );
-
   useEffect(() => {
     if (view.status !== "unlocked") return;
     let timer = window.setTimeout(() => {
@@ -184,7 +167,7 @@ export function VaultState({ children }: { children: ReactNode }) {
     };
   }, [view.status, lock, toast]);
 
-  const value = useMemo(() => ({ view, lock, chooseNetwork, refresh }), [view, lock, chooseNetwork, refresh]);
+  const value = useMemo(() => ({ view, lock, refresh }), [view, lock, refresh]);
   return <VaultContext.Provider value={value}>{children}</VaultContext.Provider>;
 }
 

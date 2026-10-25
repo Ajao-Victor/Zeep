@@ -65,7 +65,7 @@ export async function walletSummary(phrase: string, network: Network, birthday =
   };
 }
 
-export async function payFromWallet(phrase: string, network: Network, to: string, zats: bigint): Promise<void> {
+export async function payFromWallet(phrase: string, network: Network, to: string, zats: bigint, birthday = 0): Promise<void> {
   const result = await call({
     type: "pay",
     phrase,
@@ -74,6 +74,7 @@ export async function payFromWallet(phrase: string, network: Network, to: string
     to,
     zats: zats.toString(),
     minZats: String(config.autoshieldMinZats),
+    birthday,
   });
   if (!result.ok) throw new Error(result.error);
 }

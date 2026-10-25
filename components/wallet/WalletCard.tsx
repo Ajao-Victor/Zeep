@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatZec } from "@/lib/zeep";
 import { readSession } from "@/lib/vault/session";
+import { readWalletBirthday, rememberBirthday } from "@/lib/zcash/birthday";
 import { walletSummary, type WalletSummary } from "@/lib/zcash/wallet";
 import { CopyField } from "@/components/CopyField";
 import { useVault } from "@/components/Providers";
@@ -17,17 +18,18 @@ export function WalletCard() {
     const session = readSession();
     if (!session) return;
     let stop = false;
-    void walletSummary(session.phrase, view.network)
-      .then((summary) => {
+    void (async () => {
+      const birthday = (await readWalletBirthday(session.network, session.keys)) ?? 0;
+      if (stop) return;
+      try {
+        const summary = await walletSummary(session.phrase, view.network, birthday);
         if (stop) return;
         setWallet(summary);
-        if (summary.height > 0) {
-          void import("@/lib/zcash/birthday").then(({ rememberBirthday }) => rememberBirthday(session.network, session.keys, summary.height));
-        }
-      })
-      .catch((cause) => {
+        if (summary.height > 0) void rememberBirthday(session.network, session.keys, summary.height);
+      } catch (cause) {
         if (!stop) setNote(cause instanceof Error ? cause.message : "The in-app wallet is unavailable.");
-      });
+      }
+    })();
     return () => {
       stop = true;
     };

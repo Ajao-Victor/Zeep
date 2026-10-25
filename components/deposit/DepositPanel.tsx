@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { estimateDeposit, formatCredits, formatUsd, formatZec, parseZec } from "@/lib/zeep";
 import type { DepositStatus } from "@/lib/zeep/client";
 import { zip321 } from "@/lib/zcash/zip321";
+import { readWalletBirthday } from "@/lib/zcash/birthday";
 import { payFromWallet, walletSummary } from "@/lib/zcash/wallet";
 import { readSession } from "@/lib/vault/session";
 import { writePending } from "@/lib/account/pending";
@@ -32,9 +33,15 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
       const fee = Number(conf?.deposits?.fee_bps ?? conf?.split?.conversion_fee_bps?.zec_to_usd);
       if (Number.isFinite(share) && Number.isFinite(fee)) setSplit({ shareBps: share, feeBps: fee });
     }).catch(() => {});
-    void walletSummary(session.phrase, view.network)
-      .then((summary) => setCanPayHere(summary.shieldedZats > 0n || summary.transparentZats > 0n))
-      .catch(() => setCanPayHere(false));
+    void (async () => {
+      const birthday = (await readWalletBirthday(session.network, session.keys)) ?? 0;
+      try {
+        const summary = await walletSummary(session.phrase, view.network, birthday);
+        setCanPayHere(summary.shieldedZats > 0n || summary.transparentZats > 0n);
+      } catch {
+        setCanPayHere(false);
+      }
+    })();
   }, [view.network]);
 
   const estimate = (() => {
@@ -88,7 +95,8 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
     setError("");
     try {
       const zats = status.expected_zats ? BigInt(status.expected_zats) : parseZec(amount);
-      await payFromWallet(session.phrase, view.network, status.address, zats);
+      const birthday = (await readWalletBirthday(session.network, session.keys)) ?? 0;
+      await payFromWallet(session.phrase, view.network, status.address, zats, birthday);
       setBusy("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The wallet payment did not send.");

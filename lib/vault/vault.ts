@@ -2,7 +2,7 @@ import { config, apiBase, type Network } from "@/lib/config";
 import { fromHex, hex, randomBytes, zero } from "@/lib/bytes";
 import { deriveKeys, NoteBook, seedFromPhrase, USD, ZEC, ZeepClient } from "@/lib/zeep";
 import { workerProve, stopProver } from "@/lib/zeep/prove";
-import { kvDel, kvGet, kvKeys, kvSet, storeKey } from "@/lib/vault/db";
+import { kvDel, kvGet, kvKeys, kvSet, migrateStore, storeKey } from "@/lib/vault/db";
 import { closeWallet } from "@/lib/zcash/wallet";
 import { decryptBytes, decryptJson, encryptBytes, encryptJson, importAes } from "@/lib/vault/crypto";
 import { derivePinKey } from "@/lib/vault/kdf";
@@ -22,16 +22,12 @@ export class PinError extends Error {
 }
 
 export async function readPrefs(): Promise<Prefs> {
-  const stored = await kvGet<Prefs>(storeKey.prefs);
-  if (stored?.network === "mainnet" || stored?.network === "testnet") return stored;
-  return { network: config.defaultNetwork };
-}
-
-export async function writePrefs(prefs: Prefs) {
-  await kvSet(storeKey.prefs, prefs);
+  return { network: config.network };
 }
 
 export async function vaultStatus(network: Network): Promise<"empty" | "locked" | "wiped"> {
+  if (network !== config.network) return "empty";
+  await migrateStore(network);
   const vault = await kvGet(storeKey.vault(network));
   if (vault) return "locked";
   const meta = await kvGet<VaultMeta>(storeKey.meta(network));
@@ -66,11 +62,12 @@ async function noteFailure(network: Network, meta: VaultMeta): Promise<PinError>
 }
 
 async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, record: VaultRecord, notes: NoteFile | null) {
+  if (network !== config.network) throw new Error("This build is for a different network.");
   if (record.v !== 2 || !record.phrase) {
     throw new Error("This pass uses the old credit model. Restore the 24 words to open the new balance.");
   }
   const seed = seedFromPhrase(record.phrase);
-  const keys = deriveKeys(seed);
+  const keys = deriveKeys(seed, config.network);
   const book = NoteBook.from(notes);
   const client = new ZeepClient({
     baseUrl: apiBase(network),
@@ -241,6 +238,8 @@ async function mint(input: { network: Network; pin: string; phrase: string; prf?
 }
 
 export async function createVault(input: { network: Network; pin: string; phrase: string; prf?: Uint8Array; credentialId?: string }) {
+  if (input.network !== config.network) throw new Error("This build is for a different network.");
+  await migrateStore(input.network);
   const existing = await kvGet(storeKey.vault(input.network));
   if (existing) throw new Error("This network already has a pass on this device.");
   await mint(input);
@@ -296,9 +295,12 @@ export async function signOut(network: Network) {
   stopProver();
   closeWallet();
   const keys = await kvKeys();
-  await Promise.all(
-    keys.filter((key) => key.includes(`:${network}`)).map((key) => kvDel(key)),
-  );
+  const belongs = (key: string) => {
+    if (key.startsWith(`zeep:${network}:`)) return true;
+    if (key.startsWith("zeep:")) return false;
+    return key.endsWith(`:${network}`) || key.includes(`:${network}:`);
+  };
+  await Promise.all(keys.filter(belongs).map((key) => kvDel(key)));
   await kvDel(storeKey.vault(network));
   await kvDel(storeKey.meta(network));
   await kvDel(storeKey.notes(network));
@@ -324,13 +326,8 @@ export async function signOut(network: Network) {
 
 export async function lockVault() {
   stopProver();
+  closeWallet();
   clearSession();
-}
-
-export async function switchNetwork(network: Network) {
-  await lockVault();
-  await writePrefs({ network });
-  emit();
 }
 
 export async function saveRecord() {

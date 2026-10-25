@@ -42,8 +42,8 @@ export default function PrivacyPage() {
           <p className="mt-3 text-[14px] leading-relaxed text-muted">Open models run on Zeep. A frontier model is a different provider. That provider sees the prompt, not who sent it. The screen says so before you send.</p>
         </Panel>
         <Panel>
-          <h2 className="text-[17px] font-medium">Two vaults</h2>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted">Testnet and mainnet are separate vaults. Switching networks locks the one you were using. A testnet balance cannot be shown or spent while mainnet is selected.</p>
+          <h2 className="text-[17px] font-medium">One network per site</h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted">This site is built for one network. The same 24 words create different keys on testnet and on mainnet, and this site only loads the keys for its own network.</p>
           <p className="mt-3 text-[14px] leading-relaxed text-muted">
             The reserve that backs unused credits is public. <Link href="/reserve" className="text-text underline">Read the books.</Link>
           </p>

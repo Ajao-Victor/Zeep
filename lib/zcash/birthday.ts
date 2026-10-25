@@ -23,8 +23,8 @@ async function open(vaultKey: Uint8Array, packed: string): Promise<number | null
 
 export async function readWalletBirthday(network: Network, keys: ZeepKeys): Promise<number | null> {
   try {
-    const response = await fetch(`${apiBase(network)}/v1/vault/${keys.vaultId}/items/wallet-meta`, {
-      headers: { "x-vault-auth": keys.vaultAuth },
+    const response = await fetch(`${apiBase(network)}/v1/vault/items/wallet-meta`, {
+      headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth },
       credentials: "omit",
       referrerPolicy: "no-referrer",
     });
@@ -49,9 +49,9 @@ export async function rememberBirthday(network: Network, keys: ZeepKeys, height:
   if (existing) return;
   const packed = await seal(keys.vaultKey, height);
   await kvSet(storeKey.walletMeta(network), packed);
-  await fetch(`${apiBase(network)}/v1/vault/${keys.vaultId}/items/wallet-meta`, {
+  await fetch(`${apiBase(network)}/v1/vault/items/wallet-meta`, {
     method: "PUT",
-    headers: { "x-vault-auth": keys.vaultAuth, "content-type": "application/json" },
+    headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth, "content-type": "application/json" },
     body: JSON.stringify({ blob: packed }),
     credentials: "omit",
     referrerPolicy: "no-referrer",

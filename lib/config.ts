@@ -27,7 +27,8 @@ function asFlag(value: string | undefined, fallback: boolean): boolean {
 export const config = {
   appName: process.env.NEXT_PUBLIC_APP_NAME || "Zeep",
   appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  defaultNetwork: asNetwork(process.env.NEXT_PUBLIC_DEFAULT_NETWORK),
+  /** One build, one network. Never taken from a control in the page. */
+  network: asNetwork(process.env.NEXT_PUBLIC_ZEEP_NETWORK || process.env.NEXT_PUBLIC_DEFAULT_NETWORK),
   apiBase: {
     testnet: process.env.NEXT_PUBLIC_API_BASE_URL_TESTNET || "",
     mainnet: process.env.NEXT_PUBLIC_API_BASE_URL_MAINNET || "",
