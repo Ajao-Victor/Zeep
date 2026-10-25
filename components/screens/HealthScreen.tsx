@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
@@ -48,6 +49,9 @@ export function HealthScreen() {
   return (
     <Page>
       <PageIntro kicker="Health" title="Look up a condition." lede="The answer is general information, not a diagnosis." />
+      <p className="mb-4 text-[13px] text-muted">
+        Drug and trial lookup is one price. Base, Core, and Pro research is on <Link href="/search" className="text-gold hover:underline">Search</Link>.
+      </p>
       <Panel>
         <Toggle
           layout="chips"

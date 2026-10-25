@@ -22,10 +22,17 @@ export function ServicesScreen() {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {SERVICES.map((service) => {
+          const researchFrom = service.id === "search" ? view.prices?.routes.research_base?.micro_usd : undefined;
           const micro = service.route
             ? view.prices?.routes[service.route]?.micro_usd
             : view.prices?.models.find((model) => model.id === view.prices?.default_model)?.micro_usd;
-          const price = micro === undefined ? "…" : service.route ? `${formatCredits(micro, view.microPerCredit)} cr` : `from ${formatCredits(micro, view.microPerCredit)} cr`;
+          const price = researchFrom !== undefined
+            ? `research from ${formatCredits(researchFrom, view.microPerCredit)} cr`
+            : micro === undefined
+              ? "…"
+              : service.route
+                ? `${formatCredits(micro, view.microPerCredit)} cr`
+                : `from ${formatCredits(micro, view.microPerCredit)} cr`;
           return <ServiceCard key={service.id} name={service.name} summary={service.summary} href={service.href} cost={price} />;
         })}
         {SERVICES.length % 2 === 1 ? (
