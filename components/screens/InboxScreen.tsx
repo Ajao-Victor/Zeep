@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { rememberSpend } from "@/lib/account/activity";
 import { apiBase } from "@/lib/config";
 import { cx } from "@/lib/cx";
 import { isFundsError, readPaid } from "@/lib/zeep/pay";
@@ -118,6 +119,7 @@ export function InboxScreen() {
       const response = await forge.track(() => session.client.pay("POST", "/v1/inbox", "", BigInt(price)));
       const body = await readPaid<{ inbox_id: string; address: string }>(response);
       await setInbox(body.inbox_id, body.address);
+      void rememberSpend(session.network, "/v1/inbox", BigInt(price));
     } catch (cause) {
       setFunds(isFundsError(cause));
       setError(cause instanceof Error ? cause.message : "The inbox did not open.");

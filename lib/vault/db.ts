@@ -43,6 +43,7 @@ export const storeKey = {
   chat: (network: Network, id: string) => `zeep:${network}:chat:${id}`,
   feeDay: (network: Network) => `zeep:${network}:fee-day`,
   pending: (network: Network) => `zeep:${network}:pending`,
+  activity: (network: Network) => `zeep:${network}:activity`,
   walletMeta: (network: Network) => `zeep:${network}:wallet-meta`,
   fileIds: (network: Network) => `zeep:${network}:file-ids`,
   file: (network: Network, id: string) => `zeep:${network}:file:${id}`,

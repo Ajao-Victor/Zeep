@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { SERVICES } from "@/lib/catalog";
 import { fromHex } from "@/lib/bytes";
-import { parseZec, ZEC } from "@/lib/zeep";
+import { rememberActivity } from "@/lib/account/activity";
+import { formatZec, parseZec, ZEC } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
@@ -33,6 +34,11 @@ export function AgentsScreen() {
       const zats = parseZec(amount);
       const key = noteKey.trim() ? fromHex(noteKey.trim()) : undefined;
       await forge.track(() => session.client.fund(ZEC, BigInt(pk.trim()), zats, key));
+      void rememberActivity(session.network, {
+        kind: "send",
+        title: name.trim() || "Agent",
+        detail: `−${formatZec(zats)} ZEC`,
+      });
       setName("");
     } catch (cause) {
       setFunds(isFundsError(cause));

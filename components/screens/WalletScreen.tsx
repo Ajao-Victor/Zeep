@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { DepositPanel } from "@/components/deposit/DepositPanel";
 import { WithdrawForm } from "@/components/screens/CreditsScreen";
-import { WalletCard } from "@/components/wallet/WalletCard";
+import { RecentActivity } from "@/components/wallet/RecentActivity";
 import { Button } from "@/components/Button";
 import { Page, Panel } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
@@ -40,19 +40,15 @@ export function WalletScreen() {
           </div>
         </div>
       </Panel>
+      <RecentActivity />
       <div className="mt-4 flex gap-2">
         <Button variant={action === "deposit" ? "primary" : "secondary"} onClick={() => open("deposit")}>Deposit</Button>
         <Button variant={action === "withdraw" ? "primary" : "secondary"} onClick={() => open("withdraw")}>Withdraw</Button>
       </div>
       {action === "deposit" ? (
-        <div className="mt-4 grid gap-4">
-          <Panel>
-            <WalletCard />
-          </Panel>
-          <Panel>
-            <DepositPanel />
-          </Panel>
-        </div>
+        <Panel className="mt-4">
+          <DepositPanel />
+        </Panel>
       ) : null}
       {action === "withdraw" ? (
         <Panel className="mt-4">

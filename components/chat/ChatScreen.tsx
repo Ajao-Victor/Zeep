@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { rememberSpend } from "@/lib/account/activity";
 import { chatCostMicro } from "@/lib/zeep/prices";
 import { isFundsError } from "@/lib/zeep/pay";
 import { readSse } from "@/lib/api/sse";
@@ -198,9 +199,11 @@ export function ChatScreen() {
     patch(chat.id, (item) => ({ ...item, messages: [...messages, assistant] }));
     try {
       // The Forge covers the paid request up to the response headers; the reply then streams in.
+      const cost = chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb);
       const response = await forge.track(() =>
-        session.client.pay("POST", "/v1/ai/chat/completions", body, chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb)),
+        session.client.pay("POST", "/v1/ai/chat/completions", body, cost),
       );
+      if (response.ok) void rememberSpend(session.network, "/v1/ai/chat/completions", cost);
       let text = "";
       await readSse(response, (delta) => {
         text += delta;

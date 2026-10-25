@@ -3,6 +3,7 @@ import { addressKind, addressProblem, isShieldedAddress } from "@/lib/zcash/addr
 import { zip321 } from "@/lib/zcash/zip321";
 import { chatCostMicro } from "@/lib/zeep/prices";
 import { estimateDeposit, formatCredits, formatZec, parseZec, zatsToMicroUsd, bpsOf } from "@/lib/zeep/units";
+import { ACTIVITY_MS, recentActivity, spendTitle, type Activity } from "@/lib/account/activity";
 import { quizIndexes } from "@/lib/vault/phrase";
 
 describe("units", () => {
@@ -36,6 +37,26 @@ describe("units", () => {
     expect(chatCostMicro(10_500, 1000, 1_000)).toBe(10_500n);
     expect(chatCostMicro(10_500, 65536 + 1, 1_000)).toBe(11_500n);
     expect(chatCostMicro(10_500, 65536 + 1024 * 1024, 1_000)).toBe(11_500n);
+  });
+});
+
+describe("activity", () => {
+  const now = Date.UTC(2026, 9, 25, 12);
+  const item = (at: number, id: string): Activity => ({ id, at, kind: "spend", title: "AI", detail: "−1 cr" });
+
+  it("keeps the last 24 hours, newest first", () => {
+    const items = recentActivity([
+      item(now - ACTIVITY_MS, "gone"),
+      item(now - ACTIVITY_MS + 1, "edge"),
+      item(now - 60_000, "new"),
+    ], now);
+    expect(items.map((entry) => entry.id)).toEqual(["new", "edge"]);
+  });
+
+  it("names a payment from its route", () => {
+    expect(spendTitle("/v1/ai/chat/completions")).toBe("AI");
+    expect(spendTitle("/v1/research")).toBe("Research");
+    expect(spendTitle("/v1/rpc/ethereum")).toBe("Chain");
   });
 });
 

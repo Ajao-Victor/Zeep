@@ -18,8 +18,8 @@ export function CopyField({
   return (
     <div className="min-w-0">
       <div className="text-[13px] text-muted">{label}</div>
-      <div className="mt-1.5 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-lg border border-line bg-bg px-3 py-2 font-mono text-[12px] text-text">
+      <div className="mt-1.5 flex min-w-0 items-center gap-2">
+        <code className="block min-w-0 flex-1 truncate overflow-hidden rounded-lg border border-line bg-bg px-3 py-2 font-mono text-[12px] text-text">
           {value}
         </code>
         <Button

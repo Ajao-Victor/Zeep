@@ -1,3 +1,4 @@
+import { rememberSpend } from "@/lib/account/activity";
 import { ZeepApiError, type ZeepClient } from "@/lib/zeep/client";
 
 export class FundsError extends Error {
@@ -33,5 +34,7 @@ export async function readPaid<T>(response: Response): Promise<T> {
 export async function payJson<T>(client: ZeepClient, method: string, path: string, value: unknown, costMicroUsd: bigint): Promise<T> {
   const body = JSON.stringify(value);
   const response = await client.pay(method, path, body, costMicroUsd);
-  return readPaid<T>(response);
+  const parsed = await readPaid<T>(response);
+  await rememberSpend(client.keys.network, path, costMicroUsd).catch(() => undefined);
+  return parsed;
 }

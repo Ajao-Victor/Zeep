@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { rememberActivity } from "@/lib/account/activity";
 import { estimateDeposit, formatCredits, formatUsd, formatZec, parseZec } from "@/lib/zeep";
 import type { DepositStatus } from "@/lib/zeep/client";
 import { zip321 } from "@/lib/zcash/zip321";
@@ -21,6 +22,10 @@ function queuedText(queued: NonNullable<DepositStatus["queued"]>): string {
   const date = queued.until ? new Date(queued.until) : null;
   const when = date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : "the limit resets";
   return `Received. Today's deposit limit is reached, so this is credited automatically after ${when}.`;
+}
+
+function shieldedAddress(value: string): string {
+  return value.trim().replace(/^zcash:/i, "").split("?")[0];
 }
 
 function depositText(status: DepositStatus): string {
@@ -108,12 +113,28 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
     };
   }, [view.network]);
 
+  const noted = useRef(new Set<number>());
+
   useEffect(() => {
     const session = readSession();
     if (!session) return;
     const active = shown.some((row) => row.status === "waiting" || row.status === "confirming" || row.status === "queued");
     void writePending(session.network, { deposit: active });
-  }, [shown]);
+    for (const row of shown) {
+      if (row.status !== "credited" || !row.credited || noted.current.has(row.slot)) continue;
+      noted.current.add(row.slot);
+      const credited = row.credited;
+      const parts: string[] = [];
+      if (credited.zec.amount_zats > 0) parts.push(`+${formatZec(credited.zec.amount_zats)} ZEC`);
+      if (credited.usd.amount_micro_usd > 0) parts.push(`+${formatCredits(credited.usd.amount_micro_usd, view.microPerCredit)} cr`);
+      void rememberActivity(session.network, {
+        id: `deposit:${row.slot}`,
+        kind: "deposit",
+        title: "Deposit",
+        detail: parts.join(" · ") || `+${formatZec(credited.zec_zats)} ZEC`,
+      });
+    }
+  }, [shown, view.microPerCredit]);
 
   const payable = [...shown].reverse().find((row) => row.status === "waiting" || row.status === "confirming") ?? null;
 
@@ -182,12 +203,12 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
               </div>
             );
           })}
-          {payable ? (
+          {payable && canPayHere ? (
             <div className="flex flex-wrap gap-2">
-              <Button disabled={Boolean(busy) || !canPayHere} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
+              <Button disabled={Boolean(busy)} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
             </div>
           ) : null}
-          {uri ? <QRPay uri={uri} caption="Or send this amount from any wallet. No memo." /> : null}
+          {uri && payable ? <QRPay uri={uri} address={shieldedAddress(payable.address)} caption="Send shielded ZEC. No memo." /> : null}
           {error ? <p className="text-[13px] text-danger">{error}</p> : null}
           {onDone && shown.every((row) => row.status === "credited") ? <Button onClick={onDone}>Continue</Button> : null}
         </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { rememberActivity } from "@/lib/account/activity";
 import { formatCredits, formatZec, parseZec, zatsToMicroUsd, type WithdrawalPlan } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
 import type { FeeSheet } from "@/lib/zeep/prices";
@@ -125,6 +126,13 @@ export function WithdrawForm() {
     try {
       const outcome = await forge.track(() => session.client.withdraw(chosen, address.trim(), { allowTransparent: kind === "transparent" }));
       const id = String(outcome.withdrawal_id ?? outcome.id ?? "");
+      const arrived = outcome.estimated_zec_zats ?? chosen.estimatedZats;
+      void rememberActivity(session.network, {
+        id: id ? `withdraw:${id}` : undefined,
+        kind: "withdraw",
+        title: "Withdrawal",
+        detail: `−${formatZec(arrived)} ZEC`,
+      });
       setWatch({
         id,
         status: String(outcome.status ?? ""),
