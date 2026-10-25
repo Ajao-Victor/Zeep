@@ -3,8 +3,6 @@ import { apiBase, type Network } from "@/lib/config";
 import {
   chainInfoSchema,
   healthSchema,
-  inboxCreateSchema,
-  inboxMessagesSchema,
   leavesSchema,
   refundResultSchema,
   remoteConfigSchema,
@@ -12,7 +10,6 @@ import {
   searchSchema,
   tagsSchema,
   type HealthResults,
-  type InboxMessages,
   type LeafList,
   type RefundResult,
   type RemoteConfig,
@@ -125,16 +122,6 @@ export function api(network: Network) {
         proof,
         accept: "text/event-stream",
       });
-    },
-    createInbox(proof: string) {
-      return request(network, "/v1/inbox", { method: "POST", body: { action: "create" }, proof }).then(
-        (response) => parse(response, inboxCreateSchema),
-      );
-    },
-    messages(address: string): Promise<InboxMessages> {
-      return request(network, `/v1/inbox/messages?address=${encodeURIComponent(address)}`).then((response) =>
-        parse(response, inboxMessagesSchema),
-      );
     },
     refund(body: { address: string; slots: number[]; proofs: unknown }, proof: string): Promise<RefundResult> {
       return request(network, "/v1/refund", { method: "POST", body, proof }).then((response) =>

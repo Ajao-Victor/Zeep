@@ -345,6 +345,14 @@ export async function setInbox(id: string, address: string) {
   await saveRecord();
 }
 
+export async function clearInbox() {
+  const session = readSession();
+  if (!session) return;
+  session.record.inboxId = null;
+  session.record.inboxAddress = null;
+  await saveRecord();
+}
+
 export function requireSession(): Session {
   const session = readSession();
   if (!session) throw new Error("Unlock this device first.");
