@@ -51,7 +51,7 @@ export const config = {
   pinMaxAttempts: asNumber(process.env.NEXT_PUBLIC_PIN_MAX_ATTEMPTS, 5),
   argon2MemoryKib: asNumber(process.env.NEXT_PUBLIC_ARGON2_MEMORY_KIB, 65536),
   argon2Passes: asNumber(process.env.NEXT_PUBLIC_ARGON2_PASSES, 3),
-  autolockSec: asNumber(process.env.NEXT_PUBLIC_AUTOLOCK_SEC, 300),
+  autolockSec: asNumber(process.env.NEXT_PUBLIC_AUTOLOCK_SEC, 180),
   passkeyRpId: process.env.NEXT_PUBLIC_PASSKEY_RP_ID || "localhost",
   recoveryWords: asNumber(process.env.NEXT_PUBLIC_RECOVERY_WORDS, 24) >= 24 ? 24 : 12,
   clipboardClearSec: asNumber(process.env.NEXT_PUBLIC_CLIPBOARD_CLEAR_SEC, 30),

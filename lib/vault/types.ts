@@ -29,6 +29,8 @@ export type NoteFile = {
   notes: import("@/lib/zeep").Note[];
   nextDeposit: number;
   refill?: { base: string; stage: number };
+  pendingDeposits?: number[];
+  lastWithdrawalDay?: number;
 };
 
 export type WalletHold = {

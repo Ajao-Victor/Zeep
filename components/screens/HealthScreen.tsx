@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
-import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
+import { QueryBar, ResultList } from "@/components/find/QueryBar";
+import { Page } from "@/components/Panel";
 import { Toggle, type ToggleOption } from "@/components/ui/Toggle";
 import { useVault } from "@/components/Providers";
-import { ProofButton } from "@/components/ui/ProofButton";
 import { useForge } from "@/lib/fx/useForge";
 
 const KINDS: ToggleOption<"drug" | "trial">[] = [
@@ -16,11 +15,36 @@ const KINDS: ToggleOption<"drug" | "trial">[] = [
   { value: "trial", label: "Trial" },
 ];
 
+function healthView(body: unknown): { summary?: string; disclaimer?: string; items: { title: string; url?: string; snippet?: string }[] } {
+  if (!body || typeof body !== "object") return { items: typeof body === "string" ? [{ title: "Result", snippet: body }] : [] };
+  const record = body as { summary?: unknown; disclaimer?: unknown; data?: unknown };
+  const summary = typeof record.summary === "string" ? record.summary : undefined;
+  const disclaimer = typeof record.disclaimer === "string" ? record.disclaimer : undefined;
+  const data = record.data;
+  const rows = Array.isArray(data)
+    ? data
+    : data && typeof data === "object" && Array.isArray((data as { results?: unknown }).results)
+      ? (data as { results: unknown[] }).results
+      : [];
+  const items = rows.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const item = row as { name?: unknown; title?: unknown; summary?: unknown; snippet?: unknown; url?: unknown };
+    const title = typeof item.name === "string" ? item.name : typeof item.title === "string" ? item.title : "";
+    if (!title) return [];
+    return [{
+      title,
+      url: typeof item.url === "string" ? item.url : undefined,
+      snippet: typeof item.summary === "string" ? item.summary : typeof item.snippet === "string" ? item.snippet : undefined,
+    }];
+  });
+  return { summary, disclaimer, items };
+}
+
 export function HealthScreen() {
   const { view } = useVault();
   const [kind, setKind] = useState<"drug" | "trial">("drug");
   const [query, setQuery] = useState("");
-  const [text, setText] = useState("");
+  const [answer, setAnswer] = useState<ReturnType<typeof healthView> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
@@ -37,7 +61,7 @@ export function HealthScreen() {
       const body = await forge.track(() =>
         payJson<unknown>(session.client, "POST", "/v1/health/lookup", { kind, query, summarize: true }, BigInt(price)),
       );
-      setText(typeof body === "string" ? body : JSON.stringify(body, null, 2));
+      setAnswer(healthView(body));
     } catch (cause) {
       setFunds(isFundsError(cause));
       setError(cause instanceof Error ? cause.message : "The lookup failed.");
@@ -46,38 +70,31 @@ export function HealthScreen() {
     }
   }
 
+  const asked = answer !== null;
+
   return (
     <Page>
-      <PageIntro kicker="Health" title="Look up a condition." lede="The answer is general information, not a diagnosis." />
-      <p className="mb-4 text-[13px] text-muted">
-        Drug and trial lookup is one price. Base, Core, and Pro research is on <Link href="/search" className="text-gold hover:underline">Search</Link>.
-      </p>
-      <Panel>
-        <Toggle
-          layout="chips"
-          label="Lookup type"
-          options={KINDS}
-          value={kind}
-          onChange={setKind}
-          className="mb-3"
+      <div className={asked ? "mx-auto max-w-3xl" : "mx-auto flex min-h-[62vh] max-w-2xl flex-col justify-center"}>
+        <h1 className={asked ? "sr-only" : "mb-6 text-center text-[40px] font-semibold tracking-[-0.03em]"}>Health</h1>
+        <Toggle layout="chips" label="Lookup type" options={KINDS} value={kind} onChange={setKind} className={asked ? "mb-4" : "mb-4 justify-center"} />
+        <QueryBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => void lookup()}
+          placeholder={kind === "drug" ? "Look up a drug" : "Look up a trial"}
+          label="Question"
+          phase={busy ? forge.phase : "idle"}
+          disabled={busy || !query.trim() || price === undefined}
+          submitLabel="Look up"
+          settledLabel="Answered"
         />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <TextField label="Question" value={query} onChange={setQuery} />
-          </div>
-          <ProofButton
-            className="shrink-0"
-            phase={forge.phase}
-            label="Look up"
-            settledLabel="Answered"
-            disabled={busy || !query.trim() || price === undefined}
-            onClick={() => void lookup()}
-          />
-        </div>
-        {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-        {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
-        {text ? <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-[13px] leading-relaxed text-muted">{text}</pre> : null}
-      </Panel>
+        <p className={asked ? "mt-3 text-[12px] text-faint" : "mt-3 text-center text-[12px] text-faint"}>Reference information only, not a diagnosis.</p>
+        {error ? <p className="mt-4 text-[13px] text-danger">{error}</p> : null}
+        {funds ? <Button href="/deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
+        {answer?.summary ? <p className="mt-8 max-w-2xl text-[15px] leading-relaxed text-text">{answer.summary}</p> : null}
+        {answer ? <ResultList items={answer.items} /> : null}
+        {answer?.disclaimer ? <p className="mt-6 text-[12px] text-faint">{answer.disclaimer}</p> : null}
+      </div>
     </Page>
   );
 }

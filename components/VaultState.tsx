@@ -152,7 +152,7 @@ export function VaultState({ children }: { children: ReactNode }) {
     let hiddenAt = 0;
     const onShow = () => {
       if (document.hidden) hiddenAt = Date.now();
-      else if (hiddenAt && Date.now() - hiddenAt > 60_000) {
+      else if (hiddenAt && Date.now() - hiddenAt > config.autolockSec * 1000) {
         void lock("hidden").then(() => toast("Locked because this tab was hidden.", "warn"));
       }
     };

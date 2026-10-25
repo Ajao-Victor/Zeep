@@ -1,32 +1,45 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { estimateDeposit, formatCredits, formatUsd, formatZec, parseZec } from "@/lib/zeep";
 import type { DepositStatus } from "@/lib/zeep/client";
 import { zip321 } from "@/lib/zcash/zip321";
 import { readWalletBirthday } from "@/lib/zcash/birthday";
 import { payFromWallet, walletSummary } from "@/lib/zcash/wallet";
-import { openedSlots } from "@/lib/money/follow";
 import { readSession } from "@/lib/vault/session";
 import { writePending } from "@/lib/account/pending";
 import { Button } from "@/components/Button";
-import { CopyField } from "@/components/CopyField";
 import { Notice, TextField } from "@/components/Panel";
 import { QRPay } from "@/components/QRPay";
 import { useVault } from "@/components/Providers";
 
 type Split = { shareBps: number; feeBps: number };
+type Shown = DepositStatus & { slot: number };
+
+function queuedText(queued: NonNullable<DepositStatus["queued"]>): string {
+  if (queued.reason === "crediting") return "Received, crediting…";
+  const date = queued.until ? new Date(queued.until) : null;
+  const when = date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : "the limit resets";
+  return `Received. Today's deposit limit is reached, so this is credited automatically after ${when}.`;
+}
+
+function depositText(status: DepositStatus): string {
+  if (status.status === "queued") return status.queued ? queuedText(status.queued) : "Received, crediting…";
+  if (status.status === "waiting") return "Waiting for the payment.";
+  if (status.status === "confirming") return `Confirming ${status.confirming[0]?.confirmations ?? 0}/${status.confirming[0]?.needed ?? 3}.`;
+  if (status.status === "expired") return "This address expired. Start another deposit.";
+  if (status.status === "credited") return "Credited.";
+  return "";
+}
 
 export function DepositPanel({ onDone }: { onDone?: () => void }) {
   const { view } = useVault();
   const [amount, setAmount] = useState("0.1");
   const [split, setSplit] = useState<Split | null>(null);
-  const [status, setStatus] = useState<(DepositStatus & { slot: number }) | null>(null);
+  const [shown, setShown] = useState<Shown[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
   const [canPayHere, setCanPayHere] = useState(false);
-  const [extras, setExtras] = useState<NonNullable<DepositStatus["credited"]>[]>([]);
-  const followRef = useRef<number[]>([]);
 
   useEffect(() => {
     const session = readSession();
@@ -66,7 +79,7 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
       const zats = parseZec(amount);
       if (zats <= 0n) throw new Error("Enter an amount in ZEC.");
       const created = await session.client.startDeposit(zats);
-      setStatus(created);
+      setShown((current) => [...current.filter((row) => row.slot !== created.slot), created]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The deposit could not start.");
     } finally {
@@ -75,57 +88,44 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
   }
 
   useEffect(() => {
-    if (!status) return;
-    const slot = status.slot;
-    const settled = status.status === "credited" || status.status === "expired";
-    if (settled && followRef.current.length === 0) return;
-    const timer = window.setInterval(() => {
-      const session = readSession();
-      if (!session) return;
-      void (async () => {
-        const noteOpened = (before: number) => {
-          for (const opened of openedSlots(before, session.client.book.nextDeposit)) {
-            if (opened !== slot && !followRef.current.includes(opened)) followRef.current.push(opened);
-          }
-        };
-        if (!settled) {
-          const before = session.client.book.nextDeposit;
-          const next = await session.client.depositStatus(slot);
-          noteOpened(before);
-          setStatus({ ...next, slot });
-        }
-        const pending: number[] = [];
-        for (const extra of [...followRef.current]) {
-          const before = session.client.book.nextDeposit;
-          const followed = await session.client.depositStatus(extra);
-          noteOpened(before);
-          if (followed.credited) {
-            const credited = followed.credited;
-            setExtras((current) => current.some((item) => item.tree === credited.tree && item.usd.index === credited.usd.index) ? current : [...current, credited]);
-          } else pending.push(extra);
-        }
-        followRef.current = pending;
-      })().catch(() => {});
-    }, 4000);
-    return () => window.clearInterval(timer);
-  }, [status]);
+    const session = readSession();
+    if (!session) return;
+    let stop = false;
+    const tick = async () => {
+      const map = await session.client.pollDeposits();
+      if (stop) return;
+      setShown((current) => {
+        const bySlot = new Map(current.map((row) => [row.slot, row]));
+        for (const [slot, status] of map) bySlot.set(slot, { ...status, slot });
+        return [...bySlot.values()].sort((a, b) => a.slot - b.slot);
+      });
+    };
+    void tick().catch(() => {});
+    const timer = window.setInterval(() => void tick().catch(() => {}), 4000);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+    };
+  }, [view.network]);
 
   useEffect(() => {
     const session = readSession();
-    if (!session || !status) return;
-    const active = status.status === "waiting" || status.status === "confirming";
+    if (!session) return;
+    const active = shown.some((row) => row.status === "waiting" || row.status === "confirming" || row.status === "queued");
     void writePending(session.network, { deposit: active });
-  }, [status]);
+  }, [shown]);
+
+  const payable = [...shown].reverse().find((row) => row.status === "waiting" || row.status === "confirming") ?? null;
 
   async function payHere() {
     const session = readSession();
-    if (!session || !status) return;
+    if (!session || !payable) return;
     setBusy("Paying from this wallet…");
     setError("");
     try {
-      const zats = status.expected_zats ? BigInt(status.expected_zats) : parseZec(amount);
+      const zats = payable.expected_zats ? BigInt(payable.expected_zats) : parseZec(amount);
       const birthday = (await readWalletBirthday(session.network, session.keys)) ?? 0;
-      await payFromWallet(session.phrase, view.network, status.address, zats, birthday);
+      await payFromWallet(session.phrase, view.network, payable.address, zats, birthday);
       setBusy("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The wallet payment did not send.");
@@ -133,14 +133,14 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  const zecAmount = status?.expected_zats ? formatZec(status.expected_zats) : amount;
-  const uri = status ? zip321(status.address, zecAmount) : "";
-  const credited = status?.credited;
+  const zecAmount = payable?.expected_zats ? formatZec(payable.expected_zats) : amount;
+  const uri = payable ? zip321(payable.address, zecAmount) : "";
   const keptZats = estimate ? parseZec(amount) - estimate.zecZats : 0n;
+  const open = shown.length > 0;
 
   return (
     <div className="grid gap-4">
-      {!status ? (
+      {!open ? (
         <>
           <TextField label="Amount in ZEC" value={amount} onChange={setAmount} placeholder="0.1" />
           {estimate ? (
@@ -161,36 +161,35 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
         </>
       ) : (
         <>
-          <Notice tone={status.status === "credited" ? "ok" : "warn"}>
-            {status.status === "waiting" ? "Waiting for the payment." : null}
-            {status.status === "confirming"
-              ? `Confirming ${status.confirming[0]?.confirmations ?? 0}/${status.confirming[0]?.needed ?? 3}.`
-              : null}
-            {status.status === "expired" ? "This address expired. Start another deposit." : null}
-            {status.status === "credited" && credited ? "Credited." : null}
-          </Notice>
-          {credited ? (
-            <div className="grid gap-1 text-[13px] leading-relaxed text-muted">
-              <p>Received {formatZec(credited.zec_zats)} ZEC at ${credited.zec_usd}.</p>
-              <p>Kept as ZEC: {formatZec(credited.zec.amount_zats)}.</p>
-              <p>
-                Converted: {formatZec(credited.usd.converted_zats)} → {formatUsd(credited.usd.value_micro_usd)}, fee {formatUsd(credited.usd.fee_micro_usd)}
-                {credited.usd.rebate_micro_usd > 0 ? `, network fee back ${formatUsd(credited.usd.rebate_micro_usd)}` : ""}.
-              </p>
-              <p>Dollar note: {formatUsd(credited.usd.amount_micro_usd)}.</p>
+          {shown.map((status) => {
+            const credited = status.credited;
+            const settled = status.status === "credited" || status.status === "queued";
+            return (
+              <div key={status.slot} className="grid gap-2">
+                <Notice tone={settled ? "ok" : "warn"}>{depositText(status)}</Notice>
+                {status.claim ? <p className="text-[13px] text-muted">A second payment was found. It is credited on its own.</p> : null}
+                {credited ? (
+                  <div className="grid gap-1 text-[13px] leading-relaxed text-muted">
+                    <p>Received {formatZec(credited.zec_zats)} ZEC at ${credited.zec_usd}.</p>
+                    <p>Kept as ZEC: {formatZec(credited.zec.amount_zats)}.</p>
+                    <p>
+                      Converted: {formatZec(credited.usd.converted_zats)} → {formatUsd(credited.usd.value_micro_usd)}, fee {formatUsd(credited.usd.fee_micro_usd)}
+                      {credited.usd.rebate_micro_usd > 0 ? `, network fee back ${formatUsd(credited.usd.rebate_micro_usd)}` : ""}.
+                    </p>
+                    <p>Dollar note: {formatUsd(credited.usd.amount_micro_usd)}.</p>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+          {payable ? (
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={Boolean(busy) || !canPayHere} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
             </div>
           ) : null}
-          {extras.map((extra) => (
-            <p key={`${extra.tree}:${extra.usd.index}`} className="text-[13px] leading-relaxed text-muted">
-              Another payment to this address: {formatZec(extra.zec_zats)} ZEC, kept {formatZec(extra.zec.amount_zats)}, dollar note {formatUsd(extra.usd.amount_micro_usd)}.
-            </p>
-          ))}
-          <div className="flex flex-wrap gap-2">
-            <Button disabled={Boolean(busy) || !canPayHere || status.status === "credited"} onClick={() => void payHere()}>{busy || "Pay from this wallet"}</Button>
-          </div>
-          {uri && status.status !== "credited" ? <QRPay uri={uri} caption="Or send this amount from any wallet. No memo." /> : <CopyField label="Address" value={status.address} />}
+          {uri ? <QRPay uri={uri} caption="Or send this amount from any wallet. No memo." /> : null}
           {error ? <p className="text-[13px] text-danger">{error}</p> : null}
-          {onDone && status.status === "credited" ? <Button onClick={onDone}>Continue</Button> : null}
+          {onDone && shown.every((row) => row.status === "credited") ? <Button onClick={onDone}>Continue</Button> : null}
         </>
       )}
     </div>

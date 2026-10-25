@@ -6,14 +6,15 @@ import { formatCredits } from "@/lib/zeep";
 import { isFundsError, payJson } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
-import { ProofButton } from "@/components/ui/ProofButton";
+import { QueryBar, ResultList } from "@/components/find/QueryBar";
 import { Toggle, type ToggleOption } from "@/components/ui/Toggle";
 import { useForge } from "@/lib/fx/useForge";
-import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
+import { Page } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
 
 type Hit = { title?: string; url?: string; snippet?: string };
 type Level = "base" | "core" | "pro";
+type Mode = "web" | Level;
 
 const LEVELS: { id: Level; label: string; route: `research_${Level}` }[] = [
   { id: "base", label: "Base", route: "research_base" },
@@ -30,7 +31,7 @@ function resultText(result: unknown): string {
 export function SearchScreen() {
   const { view } = useVault();
   const [query, setQuery] = useState("");
-  const [level, setLevel] = useState<Level>("base");
+  const [mode, setMode] = useState<Mode>("web");
   const [hits, setHits] = useState<Hit[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [researchStatus, setResearchStatus] = useState("");
@@ -39,13 +40,19 @@ export function SearchScreen() {
   const [error, setError] = useState("");
   const [funds, setFunds] = useState(false);
   const forge = useForge();
-  const price = view.prices?.routes.search.micro_usd;
+  const webPrice = view.prices?.routes.search.micro_usd;
+  const level = mode === "web" ? "base" : mode;
   const levelPrice = view.prices?.routes[LEVELS.find((item) => item.id === level)?.route ?? "research_base"]?.micro_usd;
-  const levelOptions: ToggleOption<Level>[] = LEVELS.map((item) => {
-    const micro = view.prices?.routes[item.route]?.micro_usd;
-    const credits = micro === undefined ? "" : ` · ${formatCredits(micro, view.microPerCredit)} cr`;
-    return { value: item.id, label: `${item.label}${credits}` };
-  });
+  const price = mode === "web" ? webPrice : levelPrice;
+  const modeOptions: ToggleOption<Mode>[] = [
+    { value: "web", label: webPrice === undefined ? "Web" : `Web · ${formatCredits(webPrice, view.microPerCredit)} cr` },
+    ...LEVELS.map((item) => {
+      const micro = view.prices?.routes[item.route]?.micro_usd;
+      const credits = micro === undefined ? "" : ` · ${formatCredits(micro, view.microPerCredit)} cr`;
+      return { value: item.id, label: `${item.label}${credits}` };
+    }),
+  ];
+  const asked = hits.length > 0 || Boolean(researchText) || researchStatus === "running";
 
   async function search() {
     const session = readSession();
@@ -89,7 +96,7 @@ export function SearchScreen() {
 
   async function research() {
     const session = readSession();
-    if (!session || levelPrice === undefined) return;
+    if (!session || price === undefined || mode === "web") return;
     setBusy("research");
     setError("");
     setFunds(false);
@@ -98,7 +105,7 @@ export function SearchScreen() {
     setResearchStatus("running");
     try {
       const body = await forge.track(() =>
-        payJson<{ job_id: string }>(session.client, "POST", "/v1/research", { query, processor: level }, BigInt(levelPrice)),
+        payJson<{ job_id: string }>(session.client, "POST", "/v1/research", { query, processor: level }, BigInt(price)),
       );
       setJobId(body.job_id);
     } catch (cause) {
@@ -110,46 +117,30 @@ export function SearchScreen() {
     }
   }
 
+  const searching = busy !== null;
+
   return (
     <Page>
-      <PageIntro kicker="Search" title="Search the web." lede="One proof pays for the query. Results stay in this tab." />
-      <Panel>
-        <p className="mb-3 text-[14px] text-muted">Research runs at the level you pick. Base is the short pass, Core goes further, and Pro is the longest.</p>
-        <Toggle layout="chips" label="Research level" options={levelOptions} value={level} onChange={setLevel} className="mb-3" />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="min-w-0 flex-1">
-            <TextField label="Query" value={query} onChange={setQuery} />
-          </div>
-          <ProofButton
-            className="shrink-0"
-            phase={busy === "search" ? forge.phase : "idle"}
-            label="Search"
-            settledLabel="Found"
-            disabled={busy !== null || !query.trim() || price === undefined}
-            onClick={() => void search()}
-          />
-          <ProofButton
-            className="shrink-0"
-            phase={busy === "research" ? forge.phase : "idle"}
-            label="Research"
-            settledLabel="Started"
-            disabled={busy !== null || !query.trim() || levelPrice === undefined}
-            onClick={() => void research()}
-          />
-        </div>
-        {researchStatus === "running" ? <p className="mt-3 text-[13px] text-muted">Research is running…</p> : null}
-        {researchText ? <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-[13px] leading-relaxed text-muted">{researchText}</pre> : null}
-        {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-        {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
-      </Panel>
-      <ul className="mt-4 grid gap-3">
-        {hits.map((hit, index) => (
-          <li key={hit.url ?? index} className="rounded-xl border border-line bg-surface p-4">
-            <a href={hit.url} className="text-[15px] text-gold hover:underline" target="_blank" rel="noreferrer">{hit.title || hit.url}</a>
-            {hit.snippet ? <p className="mt-2 text-[14px] leading-relaxed text-muted">{hit.snippet}</p> : null}
-          </li>
-        ))}
-      </ul>
+      <div className={asked ? "mx-auto max-w-3xl" : "mx-auto flex min-h-[62vh] max-w-2xl flex-col justify-center"}>
+        <h1 className={asked ? "sr-only" : "mb-6 text-center text-[40px] font-semibold tracking-[-0.03em]"}>Search</h1>
+        <Toggle layout="chips" label="Search mode" options={modeOptions} value={mode} onChange={setMode} className={asked ? "mb-4" : "mb-4 justify-center"} />
+        <QueryBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => void (mode === "web" ? search() : research())}
+          placeholder={mode === "web" ? "Search the web" : "Research a question"}
+          label="Query"
+          phase={searching ? forge.phase : "idle"}
+          disabled={searching || !query.trim() || price === undefined}
+          submitLabel={mode === "web" ? "Search" : "Research"}
+          settledLabel={mode === "web" ? "Found" : "Started"}
+        />
+        {researchStatus === "running" ? <p className="mt-4 text-[13px] text-muted">Research is running…</p> : null}
+        {error ? <p className="mt-4 text-[13px] text-danger">{error}</p> : null}
+        {funds ? <Button href="/deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
+        {researchText ? <p className="mt-8 max-w-2xl whitespace-pre-wrap text-[15px] leading-relaxed text-text">{researchText}</p> : null}
+        <ResultList items={hits.map((hit) => ({ title: hit.title || hit.url || "Result", url: hit.url, snippet: hit.snippet }))} />
+      </div>
     </Page>
   );
 }

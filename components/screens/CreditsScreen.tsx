@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { networkFeesCovered } from "@/lib/money/fees";
 import { formatCredits, formatZec, parseZec, zatsToMicroUsd, type WithdrawalPlan } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
 import type { FeeSheet } from "@/lib/zeep/prices";
 import { addressKind } from "@/lib/zcash/address";
-import { kvGet, kvSet, storeKey } from "@/lib/vault/db";
 import { readSession } from "@/lib/vault/session";
 import { writePending } from "@/lib/account/pending";
 import { Button } from "@/components/Button";
@@ -22,10 +20,10 @@ type Watch = {
   message?: string;
   warning?: string;
   zec_received_zats?: number | null;
+  estimated_zec_zats?: number | null;
+  network_fees_paid_by?: string;
   tranches?: { tranche: number; status: string; txid: string | null; amount_zats: number }[];
 };
-
-const utcDay = () => Math.floor(Date.now() / 86_400_000);
 
 export function CreditsScreen() {
   const { view } = useVault();
@@ -34,7 +32,6 @@ export function CreditsScreen() {
   const [address, setAddress] = useState("");
   const [allowTransparent, setAllowTransparent] = useState(false);
   const [fees, setFees] = useState<FeeSheet | null>(null);
-  const [usedToday, setUsedToday] = useState(false);
   const [plan, setPlan] = useState<WithdrawalPlan | null>(null);
   const [stage, setStage] = useState<"form" | "confirm" | "reauth">("form");
   const [busy, setBusy] = useState("");
@@ -47,7 +44,6 @@ export function CreditsScreen() {
     const session = readSession();
     if (!session) return;
     void session.client.fees().then((sheet) => setFees(sheet as FeeSheet)).catch(() => {});
-    void kvGet<number>(storeKey.feeDay(view.network)).then((day) => setUsedToday(day === utcDay()));
   }, [view.network]);
 
   useEffect(() => {
@@ -56,7 +52,13 @@ export function CreditsScreen() {
       const session = readSession();
       if (!session) return;
       void session.client.withdrawalStatus(watch.id).then((next) => {
-        setWatch((current) => current && current.id === watch.id ? { ...current, ...next, id: watch.id } : current);
+        setWatch((current) => current && current.id === watch.id ? {
+          ...current,
+          ...next,
+          id: watch.id,
+          estimated_zec_zats: next.estimated_zec_zats ?? current.estimated_zec_zats,
+          network_fees_paid_by: next.network_fees_paid_by ?? current.network_fees_paid_by,
+        } : current);
       }).catch(() => {});
     }, 30_000);
     return () => window.clearInterval(timer);
@@ -70,26 +72,6 @@ export function CreditsScreen() {
   }, [watch]);
 
   const kind = addressKind(address, view.network);
-  const session = readSession();
-  const requestedZats = (() => {
-    if (max) return "all" as const;
-    try {
-      return amount.trim() ? parseZec(amount) : null;
-    } catch {
-      return null;
-    }
-  })();
-  const covered = requestedZats !== null && session
-    ? networkFeesCovered({
-        freeAvailable: Boolean(fees?.free_network_fees_available),
-        usedToday,
-        minMicro: fees?.withdrawal.min_micro_usd_for_free ?? 1_000_000,
-        zecUsd: view.prices?.zec_usd ?? 0,
-        zecBalanceZats: session.zecZats,
-        usdBalanceMicro: session.usdMicro,
-        requestedZats,
-      })
-    : false;
   const feePct = (fees?.withdrawal.fee_bps ?? 150) / 100;
   const beside = (() => {
     if (max) return "Everything you hold";
@@ -142,10 +124,6 @@ export function CreditsScreen() {
     setError("");
     try {
       const outcome = await forge.track(() => session.client.withdraw(chosen, address.trim(), { allowTransparent: kind === "transparent" }));
-      if (outcome?.network_fees_paid_by === "zeep") {
-        await kvSet(storeKey.feeDay(view.network), utcDay());
-        setUsedToday(true);
-      }
       const id = String(outcome.withdrawal_id ?? outcome.id ?? "");
       setWatch({
         id,
@@ -153,6 +131,8 @@ export function CreditsScreen() {
         message: outcome.processing?.message ?? outcome.message,
         warning: outcome.warning,
         zec_received_zats: outcome.zec_received_zats ?? null,
+        estimated_zec_zats: outcome.estimated_zec_zats ?? null,
+        network_fees_paid_by: outcome.network_fees_paid_by,
         tranches: outcome.tranches,
       });
       setAmount("");
@@ -180,13 +160,7 @@ export function CreditsScreen() {
         <p className="text-[14px] text-muted">
           Withdraw in ZEC. A converted part is at least $1, and the total must be worth at least $1.
         </p>
-        <p className="mt-2 text-[13px] text-faint">
-          {covered
-            ? "Network fees: covered (first today)."
-            : fees
-              ? `Network fees: ${formatZec(fees.withdrawal.network_fee_zats)} ZEC.`
-              : "Network fees load with the price sheet."}
-        </p>
+        <p className="mt-2 text-[13px] text-faint">The amount you receive is after network fees.</p>
         {stage === "form" ? (
           <div className="mt-4 grid gap-3">
             <div className="flex items-end gap-2">
@@ -210,7 +184,12 @@ export function CreditsScreen() {
             <p>
               Your ZEC balance covers {formatZec(plan.zecZats)} ZEC. To withdraw the rest, {formatCredits(plan.usdMicro, view.microPerCredit)} credits will be converted back to ZEC (fee {formatCredits(plan.conversionFeeMicro, view.microPerCredit)} credits, {feePct}%). This takes 20–60 minutes; the ZEC arrives shielded and is sent automatically.
             </p>
-            <p>≈ {formatZec(plan.estimatedZats)} ZEC. With a conversion, the final amount depends on the conversion rate.</p>
+            <p>You'll receive about {formatZec(plan.estimatedZats)} ZEC. With a conversion, the final amount depends on the conversion rate.</p>
+            <p>
+              {plan.networkFeesCovered
+                ? "Network fees: covered (first withdrawal today)."
+                : `Network fees: ${formatZec(plan.networkFeeZats)} ZEC.`}
+            </p>
             {stage === "reauth" ? (
               <Reauth onSuccess={() => void send(plan)} onCancel={resetPlan} />
             ) : (
@@ -225,6 +204,10 @@ export function CreditsScreen() {
         {watch ? (
           <div className="mt-3 grid gap-1 text-[13px] text-muted">
             {watch.message ? <p>{watch.status === "converting" ? "Processing… " : ""}{watch.message}</p> : <p>Status: {watch.status}.</p>}
+            {watch.estimated_zec_zats != null ? <p>You'll receive about {formatZec(watch.estimated_zec_zats)} ZEC.</p> : null}
+            {watch.network_fees_paid_by ? (
+              <p>{watch.network_fees_paid_by === "zeep" ? "Network fees: covered." : "Network fees: paid from the ZEC."}</p>
+            ) : null}
             {watch.zec_received_zats ? <p>ZEC received: {formatZec(watch.zec_received_zats)}.</p> : null}
             {watch.warning ? <p className="text-warn">{watch.warning}</p> : null}
             {(watch.tranches ?? []).map((tranche) => (
