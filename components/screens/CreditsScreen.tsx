@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { networkFeesCovered } from "@/lib/money/fees";
 import { formatCredits, formatZec, parseZec, zatsToMicroUsd, type WithdrawalPlan } from "@/lib/zeep";
 import { isFundsError } from "@/lib/zeep/pay";
 import type { FeeSheet } from "@/lib/zeep/prices";
@@ -69,7 +70,26 @@ export function CreditsScreen() {
   }, [watch]);
 
   const kind = addressKind(address, view.network);
-  const covered = Boolean(fees?.free_network_fees_available) && !usedToday;
+  const session = readSession();
+  const requestedZats = (() => {
+    if (max) return "all" as const;
+    try {
+      return amount.trim() ? parseZec(amount) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const covered = requestedZats !== null && session
+    ? networkFeesCovered({
+        freeAvailable: Boolean(fees?.free_network_fees_available),
+        usedToday,
+        minMicro: fees?.withdrawal.min_micro_usd_for_free ?? 1_000_000,
+        zecUsd: view.prices?.zec_usd ?? 0,
+        zecBalanceZats: session.zecZats,
+        usdBalanceMicro: session.usdMicro,
+        requestedZats,
+      })
+    : false;
   const feePct = (fees?.withdrawal.fee_bps ?? 150) / 100;
   const beside = (() => {
     if (max) return "Everything you hold";

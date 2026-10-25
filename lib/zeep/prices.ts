@@ -23,7 +23,7 @@ export type PriceSheet = {
 export type FeeSheet = {
   free_network_fees_available: boolean;
   deposit: { zec_share_bps: number; fee_bps: number };
-  withdrawal: { fee_bps: number; network_fee_zats: number; network_fees_micro_usd: number; min_micro_usd: number };
+  withdrawal: { fee_bps: number; network_fee_zats: number; network_fees_micro_usd: number; min_micro_usd: number; min_micro_usd_for_free?: number };
 };
 
 /** model.micro_usd plus one attachment unit per MiB past the free 64 KB. */
