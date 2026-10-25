@@ -137,7 +137,7 @@ export function SearchScreen() {
         />
         {researchStatus === "running" ? <p className="mt-4 text-[13px] text-muted">Research is running…</p> : null}
         {error ? <p className="mt-4 text-[13px] text-danger">{error}</p> : null}
-        {funds ? <Button href="/deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
+        {funds ? <Button href="/wallet?action=deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
         {researchText ? <p className="mt-8 max-w-2xl whitespace-pre-wrap text-[15px] leading-relaxed text-text">{researchText}</p> : null}
         <ResultList items={hits.map((hit) => ({ title: hit.title || hit.url || "Result", url: hit.url, snippet: hit.snippet }))} />
       </div>

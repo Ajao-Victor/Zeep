@@ -56,7 +56,7 @@ export function AgentsScreen() {
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-2">
           <ProofButton phase={forge.phase} label="Transfer" settledLabel="Moved" disabled={busy || !pk.trim()} onClick={() => void fund()} />
-          {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
+          {funds ? <Button href="/wallet?action=deposit" variant="secondary">Add funds</Button> : null}
         </div>
       </Panel>
     </Page>

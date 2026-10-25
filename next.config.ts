@@ -55,6 +55,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  async redirects() {
+    return [
+      { source: "/credits", destination: "/wallet?action=withdraw", permanent: false },
+      { source: "/deposit", destination: "/wallet?action=deposit", permanent: false },
+    ];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

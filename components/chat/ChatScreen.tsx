@@ -329,7 +329,7 @@ export function ChatScreen() {
             {active ? <p className="px-4 pb-1 text-center text-[12px] text-faint">Zeep sees the prompt, not who sent it.</p> : null}
             {funds ? (
               <div className="px-4">
-                <Button href="/deposit" variant="secondary">Add funds</Button>
+                <Button href="/wallet?action=deposit" variant="secondary">Add funds</Button>
               </div>
             ) : null}
             <Composer

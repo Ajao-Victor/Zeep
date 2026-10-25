@@ -15,8 +15,9 @@ export function ServicesScreen() {
       <div className="mb-4">
         <Panel>
           <p className="font-mono text-[22px] text-gold">{view.creditLabel} cr</p>
+          <p className="mt-1 text-[14px] text-muted">{view.totalUsdLabel}</p>
           <div className="mt-4">
-            <Button href="/deposit">Deposit</Button>
+            <Button href="/wallet?action=deposit">Deposit</Button>
           </div>
         </Panel>
       </div>

@@ -15,7 +15,7 @@ import { IconButton } from "@/components/ui/IconButton";
 const PUBLIC = [
   { href: "/services", label: "Services" },
   { href: "/#how", label: "How it works" },
-  { href: "/credits", label: "Refunds" },
+  { href: "/wallet", label: "Wallet" },
   { href: "/#faq", label: "FAQ" },
 ];
 
@@ -26,9 +26,8 @@ const APP = [
   ["/health", "Health"],
   ["/chain", "Chain"],
   ["/inbox", "Inbox"],
-  ["/credits", "Credits"],
   ["/agents", "Agents"],
-  ["/deposit", "Deposit"],
+  ["/wallet", "Wallet"],
 ] as const;
 
 function current(href: string, pathname: string) {
@@ -180,8 +179,9 @@ export function SiteHeader() {
             <Tooltip.Provider delayDuration={200}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
-                  <Link href="/credits" className="shrink-0 whitespace-nowrap font-mono text-[13px] text-gold">
+                  <Link href="/wallet" className="shrink-0 whitespace-nowrap font-mono text-[13px] text-gold">
                     {view.creditLabel} cr
+                    <span className="hidden text-muted sm:inline"> · {view.totalUsdLabel}</span>
                   </Link>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>

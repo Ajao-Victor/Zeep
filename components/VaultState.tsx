@@ -18,6 +18,8 @@ export type VaultView = {
   inboxId: string | null;
   inboxAddress: string | null;
   creditLabel: string;
+  totalUsdLabel: string;
+  usdCreditLabel: string;
   usdLabel: string;
   zecHeldLabel: string;
   zecValueLabel: string;
@@ -40,6 +42,8 @@ function blank(network: Network): VaultView {
     inboxId: null,
     inboxAddress: null,
     creditLabel: "…",
+    totalUsdLabel: "…",
+    usdCreditLabel: "0",
     usdLabel: "$0.00",
     zecHeldLabel: "0",
     zecValueLabel: "…",
@@ -62,6 +66,8 @@ function fromSession(network: Network): VaultView {
     inboxId: session.record.inboxId,
     inboxAddress: session.record.inboxAddress,
     creditLabel: prices ? formatCredits(session.client.totalMicroUsd(zecUsd), per) : "…",
+    totalUsdLabel: prices ? formatUsd(session.client.totalMicroUsd(zecUsd)) : "…",
+    usdCreditLabel: formatCredits(session.usdMicro, per),
     usdLabel: formatUsd(session.usdMicro),
     zecHeldLabel: formatZec(session.zecZats),
     zecValueLabel: prices ? formatUsd(zatsToMicroUsd(session.zecZats, zecUsd)) : "…",

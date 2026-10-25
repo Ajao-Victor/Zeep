@@ -13,7 +13,7 @@ export type { VaultView } from "@/components/VaultState";
 
 export function Providers({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const chat = pathname === "/ai";
+  const fill = pathname === "/ai" || pathname === "/inbox";
   const [client] = useState(
     () =>
       new QueryClient({
@@ -24,7 +24,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={client}>
       <ToastProvider>
         <VaultState>
-          <div className={chat ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-dvh flex-col"}>
+          <div className={fill ? "flex h-dvh flex-col overflow-hidden" : "flex min-h-dvh flex-col"}>
             <a
               href="#content"
               className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-surface focus:px-3 focus:py-2"
@@ -32,7 +32,7 @@ export function Providers({ children }: { children: ReactNode }) {
               Skip to content
             </a>
             <SiteHeader />
-            <div id="content" className={chat ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex-1"}>
+            <div id="content" className={fill ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex-1"}>
               {children}
             </div>
             <SiteFooter />

@@ -9,7 +9,7 @@ import { readSession } from "@/lib/vault/session";
 import { writePending } from "@/lib/account/pending";
 import { Button } from "@/components/Button";
 import { Reauth } from "@/components/flows/Reauth";
-import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
+import { TextField } from "@/components/Panel";
 import { useVault } from "@/components/Providers";
 import { ProofButton } from "@/components/ui/ProofButton";
 import { useForge } from "@/lib/fx/useForge";
@@ -25,7 +25,7 @@ type Watch = {
   tranches?: { tranche: number; status: string; txid: string | null; amount_zats: number }[];
 };
 
-export function CreditsScreen() {
+export function WithdrawForm() {
   const { view } = useVault();
   const [amount, setAmount] = useState("");
   const [max, setMax] = useState(false);
@@ -147,16 +147,7 @@ export function CreditsScreen() {
   }
 
   return (
-    <Page narrow>
-      <PageIntro kicker="Balance" title={`${view.creditLabel} cr`} lede="Dollars plus ZEC at the live price. 1 credit is $1." />
-      <Panel>
-        <div className="grid gap-1 text-[14px] text-muted">
-          <p>Credits (dollars): {view.usdLabel}</p>
-          <p>ZEC: {view.zecHeldLabel} ZEC ≈ {view.zecValueLabel}</p>
-          <p>Total: {view.creditLabel} cr</p>
-        </div>
-      </Panel>
-      <Panel>
+    <div>
         <p className="text-[14px] text-muted">
           Withdraw in ZEC. A converted part is at least $1, and the total must be worth at least $1.
         </p>
@@ -227,13 +218,11 @@ export function CreditsScreen() {
               disabled={Boolean(busy) || (!max && !amount.trim()) || !address.trim()}
               onClick={() => void review()}
             />
-            <Button href="/deposit" variant="secondary">Deposit</Button>
-            {funds ? <Button href="/deposit" variant="secondary">Add funds</Button> : null}
+            {funds ? <Button href="/wallet?action=deposit" variant="secondary">Add funds</Button> : null}
             {/* Planning makes no proof, so it is plain text beside the button, not a Forge phase. */}
             {busy && forge.phase === "idle" ? <span className="self-center text-[13px] text-muted">{busy}</span> : null}
           </div>
         ) : null}
-      </Panel>
-    </Page>
+    </div>
   );
 }

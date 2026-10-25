@@ -62,7 +62,7 @@ export function ChainScreen() {
           <ProofButton phase={forge.phase} label="Call" settledLabel="Answered" disabled={busy || price === undefined} onClick={() => void call()} />
         </div>
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-        {funds ? <Button href="/deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
+        {funds ? <Button href="/wallet?action=deposit" variant="secondary" className="mt-3">Add funds</Button> : null}
         {text ? <pre className="mt-4 overflow-x-auto whitespace-pre-wrap text-[13px] leading-relaxed text-muted">{text}</pre> : null}
       </Panel>
     </Page>

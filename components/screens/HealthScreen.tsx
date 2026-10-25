@@ -90,7 +90,7 @@ export function HealthScreen() {
         />
         <p className={asked ? "mt-3 text-[12px] text-faint" : "mt-3 text-center text-[12px] text-faint"}>Reference information only, not a diagnosis.</p>
         {error ? <p className="mt-4 text-[13px] text-danger">{error}</p> : null}
-        {funds ? <Button href="/deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
+        {funds ? <Button href="/wallet?action=deposit" variant="secondary" className="mt-4">Add funds</Button> : null}
         {answer?.summary ? <p className="mt-8 max-w-2xl text-[15px] leading-relaxed text-text">{answer.summary}</p> : null}
         {answer ? <ResultList items={answer.items} /> : null}
         {answer?.disclaimer ? <p className="mt-6 text-[12px] text-faint">{answer.disclaimer}</p> : null}

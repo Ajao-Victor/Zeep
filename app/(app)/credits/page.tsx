@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { CreditsScreen } from "@/components/screens/CreditsScreen";
-
-export const metadata: Metadata = { title: "Credits" };
+import { redirect } from "next/navigation";
 
 export default function CreditsPage() {
-  return <CreditsScreen />;
+  redirect("/wallet?action=withdraw");
 }

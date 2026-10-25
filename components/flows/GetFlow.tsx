@@ -57,7 +57,7 @@ export function GetFlow() {
         <PageIntro title="This network already has a balance." lede="It is unlocked on this device." />
         <div className="flex gap-2">
           <Button href="/services">Open services</Button>
-          <Button href="/deposit" variant="secondary">Deposit</Button>
+          <Button href="/wallet?action=deposit" variant="secondary">Deposit</Button>
         </div>
       </Page>
     );
