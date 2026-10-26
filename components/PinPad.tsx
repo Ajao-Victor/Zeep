@@ -60,7 +60,7 @@ export function PinPad({
   }, [onChange, length, locked]);
 
   return (
-    <div className="w-full max-w-[240px]">
+    <div className="mx-auto w-full max-w-[240px]">
       <div className={cx("flex justify-center gap-2", status === "error" && "zeep-shake")} aria-hidden="true">
         {Array.from({ length }, (_, index) => {
           const filled = index < value.length || status === "ok";

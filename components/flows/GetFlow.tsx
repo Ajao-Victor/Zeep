@@ -184,8 +184,8 @@ export function GetFlow() {
           <div className="mb-5 flex justify-center">
             <VaultDoor phase={door.phase} />
           </div>
-          <h2 className="text-[17px] font-medium">{confirming ? "Enter the PIN again" : "Choose a 6-digit PIN"}</h2>
-          <p className="mt-2 text-[14px] text-muted">Argon2id derives the key in a worker. Five wrong unlocks erase this device's vault.</p>
+          <h2 className="text-center text-[17px] font-medium">{confirming ? "Enter the PIN again" : "Choose a 6-digit PIN"}</h2>
+          <p className="mt-2 text-center text-[14px] text-muted">Argon2id derives the key in a worker. Five wrong unlocks erase this device's vault.</p>
           <div className="mt-5">
             <PinPad
               length={config.pinLength}
@@ -195,9 +195,9 @@ export function GetFlow() {
               disabled={Boolean(busy)}
             />
           </div>
-          {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-          <p className="mt-3 min-h-5 text-[13px] text-muted" role="status">{busy}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
+          {error ? <p className="mt-3 text-center text-[13px] text-danger">{error}</p> : null}
+          <p className="mt-3 min-h-5 text-center text-[13px] text-muted" role="status">{busy}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
             {confirming ? (
               <>
                 <Button disabled={Boolean(busy) || again.length !== config.pinLength} onClick={() => void continuePin(false)}>Continue</Button>
