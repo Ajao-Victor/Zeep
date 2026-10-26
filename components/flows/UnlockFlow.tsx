@@ -141,18 +141,16 @@ export function UnlockFlow() {
             Unlock with fingerprint
           </Button>
         ) : null}
-        <div className="mx-auto w-fit">
-          <PinPad
-            value={pin}
-            onChange={(value) => {
-              setPin(value);
-              setWrong(false);
-            }}
-            length={config.pinLength}
-            status={pinStatus}
-            disabled={Boolean(busy) || checking}
-          />
-        </div>
+        <PinPad
+          value={pin}
+          onChange={(value) => {
+            setPin(value);
+            setWrong(false);
+          }}
+          length={config.pinLength}
+          status={pinStatus}
+          disabled={Boolean(busy) || checking}
+        />
         <p className="mt-4 min-h-5 text-center text-[13px]" role="status">
           {error ? (
             <span className="text-danger">{error}</span>
