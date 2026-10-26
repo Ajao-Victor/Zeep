@@ -31,6 +31,7 @@ export type NoteFile = {
   refill?: { base: string; stage: number };
   pendingDeposits?: number[];
   lastWithdrawalDay?: number;
+  watchedDeposits?: Record<number, number>;
 };
 
 export type WalletHold = {

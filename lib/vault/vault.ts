@@ -69,6 +69,12 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
   const seed = seedFromPhrase(record.phrase);
   const keys = deriveKeys(seed, config.network);
   const book = NoteBook.from(notes);
+  // Deposits credited before this book kept a watch list are checked again, so a second
+  // payment already on the server is claimed into the balance on the next poll.
+  if (Object.keys(book.watchedDeposits).length === 0) {
+    const until = Date.now() + 30 * 86_400_000;
+    for (let slot = 0; slot < book.nextDeposit; slot++) book.watchedDeposits[slot] = until;
+  }
   const client = new ZeepClient({
     baseUrl: apiBase(network),
     keys,

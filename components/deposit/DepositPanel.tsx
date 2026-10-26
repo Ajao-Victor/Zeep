@@ -106,7 +106,7 @@ export function DepositPanel({ onDone }: { onDone?: () => void }) {
       });
     };
     void tick().catch(() => {});
-    const timer = window.setInterval(() => void tick().catch(() => {}), 4000);
+    const timer = window.setInterval(() => void tick().catch(() => {}), 15_000);
     return () => {
       stop = true;
       window.clearInterval(timer);

@@ -129,6 +129,20 @@ export function VaultState({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [view.status, view.network]);
 
+  useEffect(() => {
+    if (view.status !== "unlocked") return;
+    const session = readSession();
+    if (!session) return;
+    const tick = () => {
+      const current = readSession();
+      if (!current) return;
+      void current.client.pollDeposits().catch(() => {});
+    };
+    tick();
+    const timer = window.setInterval(tick, 15_000);
+    return () => window.clearInterval(timer);
+  }, [view.status, view.network]);
+
   // The session is cleared first; only then does /unlock play the Vault Door closing.
   // While unlocked, keep /unlock's code warm, so a lock or auto-lock shows the door without a fetch.
   useEffect(() => {
