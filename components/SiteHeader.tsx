@@ -13,7 +13,7 @@ import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
 
 const PUBLIC = [
-  { href: "/services", label: "Services" },
+  { href: "/#how", label: "Services" },
   { href: "/#how", label: "How it works" },
   { href: "/#faq", label: "FAQ" },
 ];
@@ -119,7 +119,7 @@ export function SiteHeader() {
               <nav className="flex flex-col gap-1 overflow-y-auto p-3 text-[15px]">
                 {PUBLIC.map((item) => (
                   <Link
-                    key={item.href}
+                    key={item.label}
                     href={item.href}
                     onClick={(event) => {
                       setMenuOpen(false);
@@ -136,7 +136,7 @@ export function SiteHeader() {
                 {view.status === "unlocked" ? (
                   <>
                     <p className="px-3 pb-1 pt-4 text-[12px] text-faint">This balance</p>
-                    {APP.filter(([href]) => href !== "/services").map(([href, label]) => (
+                    {APP.map(([href, label]) => (
                       <Link
                         key={href}
                         href={href}
@@ -167,7 +167,7 @@ export function SiteHeader() {
         </Dialog.Root>
         <nav className="hidden min-w-0 items-center gap-6 text-[14px] text-muted lg:flex">
           {PUBLIC.map((item) => (
-            <Link key={item.href} href={item.href} onClick={(event) => onSectionLink(event, item.href)} className="hover:text-text">
+            <Link key={item.label} href={item.href} onClick={(event) => onSectionLink(event, item.href)} className="hover:text-text">
               {item.label}
             </Link>
           ))}
