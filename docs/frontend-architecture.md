@@ -17,7 +17,7 @@ The user has two private balances, and the app shows them as one number:
 
 **Three signature moments** get the motion budget, and everything else stays quiet:
 
-- **The Proof Gate** (landing hero). A live three.js scene: coloured requests funnel into a rotating gold lattice and leave as white points along five lanes to the services. See "Motion and signature moments".
+- **The Proof Gate** (landing hero). A live three.js scene: coloured requests funnel into a rotating gold lattice and leave as white points along four lanes to the services. See "Motion and signature moments".
 - **The Forge** (every paid request). The Send/Search/Call/… button turns into a small gold forge driven by the real proof.
 - **The Vault Door** (create, unlock, lock, network switch). A CSS 3D door that turns while Argon2id derives the key and opens, seals or closes on the real outcome.
 
@@ -71,29 +71,29 @@ Fifteen routes. Public pages work without a pass. Anything that spends or withdr
 
 | Route | Screen | Needs unlocked pass |
 | --- | --- | --- |
-| `/` | Landing: hero with the Proof Gate, How it works (`#how`, three steps), Services (`#services`: five cards, each opening `/get?next=<service>`, and Open a balance), FAQ (`#faq`) | No |
+| `/` | Landing: hero with the Proof Gate, How it works (`#how`, three steps), Services (`#services`: four cards, each opening `/get?next=<service>`, and Open a balance), FAQ (`#faq`) | No |
 | `/privacy` | How it stays private | No |
 | `/get` | Open a balance: 24-word phrase, word check, 6-digit PIN, optional fingerprint, optional deposit | Creates one |
 | `/unlock` | PIN pad or fingerprint; link to restore | No |
 | `/restore` | Enter the 24 words, set a new PIN, rebuild notes, wallet and chats | No |
-| `/services` | Credit total and the five service cards | Yes |
+| `/services` | Credit total and the four service cards | Yes |
 | `/ai` | Chat: history sidebar, composer, model picker, streamed replies | Yes |
 | `/search` | One paid search | Yes |
 | `/health` | Drug and trial lookup | Yes |
-| `/chain` | Paid JSON-RPC to Ethereum, Base or Solana | Yes |
 | `/inbox` | Open an anonymous inbox and read messages | Yes |
-| `/deposit` | In-app wallet card, then a deposit of any ZEC amount | Yes |
-| `/credits` | Balance details (dollars and ZEC) and withdrawals | Yes |
+| `/wallet` | Balance (dollars and ZEC), deposits and withdrawals in one place; `?action=deposit` or `?action=withdraw` opens either | Yes |
+| `/deposit` | Redirects to `/wallet?action=deposit` | Yes |
+| `/credits` | Redirects to `/wallet?action=withdraw` | Yes |
 | `/agents` | Move ZEC notes to another spend key | Yes |
 | `/reserve` | Public books: owed, held, coverage, deposits, services, in dollars | No |
 
 The header credit link goes to `/credits`. Below 400 px the "Open a balance" button reads "Start" so it fits.
 
-**Header by account state.** Without an account on the device, the header shows Services (`#services`, the five service cards), How it works (`#how`, the three steps), FAQ (`#faq`) and "Open a balance" (`/get`). Wallet is not listed: it needs a balance. Once a vault exists, those landing-page links are hidden and the logo goes to `/services`. A locked vault gets an Unlock button (not on `/unlock` itself), and an unlocked one gets the credits, Lock and Sign out, plus the in-app nav.
+**Header by account state.** Without an account on the device, the header shows Services (`#services`, the four service cards), How it works (`#how`, the three steps), FAQ (`#faq`) and "Open a balance" (`/get`). Wallet is not listed: it needs a balance. Once a vault exists, those landing-page links are hidden and the logo goes to `/services`. A locked vault gets an Unlock button (not on `/unlock` itself), and an unlocked one gets the credits, Lock and Sign out, plus the in-app nav.
 
 **The landing page is for devices without an account.** `components/landing/SignedInRedirect.tsx`, mounted by `Providers` on `/` so the landing bundle stays at about 114 kB, sends an unlocked balance to `/services` and a locked one to `/unlock?next=/services`. On a full page load, an inline `<head>` script (`lib/account/hint.ts`) does the same before first paint, using a one-bit localStorage hint, so a returning device never sees the landing page flash. The app-route guard sends a device with no vault to `/`. Signing out deletes the vault and returns to `/`, which is the only way back to the landing page.
 
-**Service cards lead to their service.** A landing service card opens `/get?next=/ai` (or `/search`, `/health`, `/chain`, `/inbox`). The landing page is only for devices without a balance, and the service pages need one. The Welcome step says "After this, you'll go to <service>.", "Sign in with 24 words" carries `next` to `/restore`, and both flows finish on that service instead of `/services`. `serviceAt()` in `lib/catalog.ts` accepts only the five service routes, so a crafted `next` falls back to `/services`. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
+**Service cards lead to their service.** A landing service card opens `/get?next=/ai` (or `/search`, `/health`, `/inbox`). The landing page is only for devices without a balance, and the service pages need one. The Welcome step says "After this, you'll go to <service>.", "Sign in with 24 words" carries `next` to `/restore`, and both flows finish on that service instead of `/services`. `serviceAt()` in `lib/catalog.ts` accepts only the four service routes, so a crafted `next` falls back to `/services`. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
 
 ## Design system
 
@@ -447,7 +447,7 @@ Zeep-front/
     (marketing)/privacy/page.tsx
     reserve/page.tsx
     get/  unlock/  restore/
-    (app)/services/ ai/ search/ health/ chain/ inbox/ deposit/ credits/ agents/
+    (app)/services/ ai/ search/ health/ inbox/ deposit/ credits/ agents/
     layout.tsx                      # fonts, metadata, providers
   components/
     SiteHeader.tsx                  # credit total, tooltip, network toggle, mobile menu

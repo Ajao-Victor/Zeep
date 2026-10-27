@@ -2,6 +2,8 @@
 
 Oct 22, 2026 · Draft for review
 
+> **Update, Oct 27, 2026:** Blockchain access (`/chain`, JSON-RPC) has been retired, and the backend is removing it. The platform now has four services: Private AI, Search, Health and Inbox. Mentions of Chain, `CHAINS`, chain chips and a fifth lane or monolith below are historical; the Proof Gate now draws four lanes.
+
 ## Purpose
 
 This spec plans a radical UI/UX upgrade for the Zeep frontend: a clean, futuristic design system with real 3D, cinematic motion and top-tier finish. It is written against the code as it stands on `main` (commit `5db83f8`), not only against `docs/frontend-architecture.md`. Where the two disagree, the code wins, and section 2 lists the differences.
