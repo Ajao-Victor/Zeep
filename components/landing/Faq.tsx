@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/landing/Reveal";
+
 const QUESTIONS = [
   {
     q: "What is a credit?",
@@ -32,30 +34,34 @@ const QUESTIONS = [
 export function Faq() {
   return (
     <section id="faq" className="border-t border-line pb-16 pt-8">
-      <p className="text-[13px] text-muted">FAQ</p>
-      <h2 className="mt-2.5 max-w-xl text-[32px] font-semibold tracking-[-0.025em]">Seven questions, answered.</h2>
+      <Reveal>
+        <p className="text-[13px] text-muted">FAQ</p>
+        <h2 className="mt-2.5 max-w-xl text-[32px] font-semibold tracking-[-0.025em]">Seven questions, answered.</h2>
+      </Reveal>
       {/* Native disclosure: questions only until one is opened, with keyboard and screen-reader
-          support and no JavaScript. */}
-      <div className="mt-9 border-t border-line">
-        {QUESTIONS.map((item, index) => (
-          <details key={item.q} className="group border-b border-line">
-            <summary className="flex cursor-pointer list-none items-center gap-4 py-6 md:gap-8 [&::-webkit-details-marker]:hidden">
-              <span className="w-5 flex-none font-mono text-[12px] text-gold">{String(index + 1).padStart(2, "0")}</span>
-              <h3 className="flex-1 text-[16px] font-medium tracking-[-0.01em]">{item.q}</h3>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                aria-hidden="true"
-                className="flex-none text-muted transition-transform duration-(--dur-base) ease-(--curve-move) group-open:rotate-180"
-              >
-                <path d="M3 5.5 7 9.5 11 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </summary>
-            <p className="max-w-2xl pb-6 pl-9 text-[14px] leading-relaxed text-muted md:pl-13">{item.a}</p>
-          </details>
-        ))}
-      </div>
+          support and no JavaScript. The list floats in a glass panel over the backdrop. */}
+      <Reveal delay={120} className="mt-9">
+        <div className="glass-1 glass-edge relative rounded-2xl border border-line px-5 shadow-elev-2 sm:px-7">
+          {QUESTIONS.map((item, index) => (
+            <details key={item.q} className="group border-b border-line last:border-b-0">
+              <summary className="flex cursor-pointer list-none items-center gap-4 py-6 md:gap-8 [&::-webkit-details-marker]:hidden">
+                <span className="w-5 flex-none font-mono text-[12px] text-gold">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="flex-1 text-[16px] font-medium tracking-[-0.01em]">{item.q}</h3>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  aria-hidden="true"
+                  className="flex-none text-muted transition-transform duration-(--dur-base) ease-(--curve-move) group-open:rotate-180"
+                >
+                  <path d="M3 5.5 7 9.5 11 5.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </summary>
+              <p className="max-w-2xl pb-6 pl-9 text-[14px] leading-relaxed text-muted md:pl-13">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </Reveal>
     </section>
   );
 }
