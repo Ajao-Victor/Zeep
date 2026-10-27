@@ -54,6 +54,10 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { view, lock } = useVault();
   const inApp = APP.some(([href]) => pathname === href);
+  // An account on this device: the landing page redirects into the app, so its links are hidden
+  // and the logo goes to the app home. Until the vault status loads, visitors see the public nav.
+  const signedIn = view.ready && (view.status === "unlocked" || view.status === "locked");
+  const links = signedIn ? [] : PUBLIC;
   const activeRef = useRef<HTMLAnchorElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -90,7 +94,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-2 px-4 sm:gap-6 sm:px-8 lg:gap-8">
-        <Link href="/" aria-label={config.appName} className="flex shrink-0 items-center gap-2.5 text-[18px] font-semibold tracking-[-0.02em]">
+        <Link href={signedIn ? "/services" : "/"} aria-label={config.appName} className="flex shrink-0 items-center gap-2.5 text-[18px] font-semibold tracking-[-0.02em]">
           <span className="grid h-[22px] w-[22px] place-items-center rounded-md border-[1.5px] border-gold text-[12px] text-gold">
             Z
           </span>
@@ -117,7 +121,7 @@ export function SiteHeader() {
                 </Dialog.Close>
               </div>
               <nav className="flex flex-col gap-1 overflow-y-auto p-3 text-[15px]">
-                {PUBLIC.map((item) => (
+                {links.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
@@ -166,7 +170,7 @@ export function SiteHeader() {
           </Dialog.Portal>
         </Dialog.Root>
         <nav className="hidden min-w-0 items-center gap-6 text-[14px] text-muted lg:flex">
-          {PUBLIC.map((item) => (
+          {links.map((item) => (
             <Link key={item.label} href={item.href} onClick={(event) => onSectionLink(event, item.href)} className="hover:text-text">
               {item.label}
             </Link>
