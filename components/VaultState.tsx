@@ -122,7 +122,8 @@ export function VaultState({ children }: { children: ReactNode }) {
         current.prices = prices;
         emit();
         window.clearInterval(timer);
-        timer = window.setInterval(pull, Math.max(30, prices.refresh_sec ?? 300) * 1000);
+        const sec = Math.min(60, Math.max(30, prices.refresh_sec ?? 60));
+        timer = window.setInterval(pull, sec * 1000);
       }).catch(() => {});
     };
     pull();

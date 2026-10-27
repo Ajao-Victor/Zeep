@@ -32,6 +32,8 @@ export type NoteFile = {
   pendingDeposits?: number[];
   lastWithdrawalDay?: number;
   watchedDeposits?: Record<number, number>;
+  dailyLimitMicro?: string;
+  spentToday?: { day: number; micro: string };
 };
 
 export type WalletHold = {

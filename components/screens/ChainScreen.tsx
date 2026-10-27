@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CHAINS } from "@/lib/catalog";
-import { isFundsError, payJson } from "@/lib/zeep/pay";
+import { isFundsError, payJson, requestError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { Page, PageIntro, Panel, TextField } from "@/components/Panel";
@@ -37,7 +37,7 @@ export function ChainScreen() {
       setText(JSON.stringify(body, null, 2));
     } catch (cause) {
       setFunds(isFundsError(cause));
-      setError(cause instanceof Error ? cause.message : "The call failed.");
+      setError(requestError(cause, "The call failed."));
     } finally {
       setBusy(false);
     }

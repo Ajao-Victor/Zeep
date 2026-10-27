@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { rememberSpend } from "@/lib/account/activity";
-import { chatCostMicro } from "@/lib/zeep/prices";
-import { isFundsError } from "@/lib/zeep/pay";
+import { formatCredits } from "@/lib/zeep";
+import { chatCostMicro } from "@/lib/zeep/client";
+import { isFundsError, requestError } from "@/lib/zeep/pay";
 import { readSse } from "@/lib/api/sse";
-import { readSession } from "@/lib/vault/session";
+import { emit, readSession } from "@/lib/vault/session";
 import { expandMessages, readAttachment, storedParts } from "@/lib/chat/files";
 import { deleteAllDeviceFiles, saveDeviceFile } from "@/lib/chat/blobs";
 import { deleteChat, loadChats, readChatPrefs, saveChat, writeChatPrefs } from "@/lib/chat/store";
@@ -17,7 +18,6 @@ import { useForge } from "@/lib/fx/useForge";
 import { SignOutDialog } from "@/components/account/SignOutDialog";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
-import { useToast } from "@/components/Toast";
 import { useVault } from "@/components/Providers";
 import { Composer, rejectKind } from "@/components/chat/Composer";
 import { SettingsDialog } from "@/components/chat/SettingsDialog";
@@ -26,12 +26,12 @@ import { Thread } from "@/components/chat/Thread";
 
 export function ChatScreen() {
   const { view } = useVault();
-  const toast = useToast();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [modelId, setModelId] = useState("");
+  const [longer, setLonger] = useState(false);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const forge = useForge();
@@ -89,16 +89,18 @@ export function ChatScreen() {
   }
 
   async function attach(files: FileList | File[]) {
-    const prices = view.prices;
+    const model = view.prices?.models.find((item) => item.id === modelId);
     const next: Attachment[] = [];
-    let sawImage = false;
     for (const file of [...files]) {
+      if (file.type.startsWith("image/") && model?.vision === false) {
+        setHint("This model can't read images.");
+        continue;
+      }
       const problem = rejectKind(file);
       if (problem) {
         setHint(problem);
         continue;
       }
-      if (file.type.startsWith("image/")) sawImage = true;
       try {
         next.push(await readAttachment(file));
       } catch (cause) {
@@ -106,46 +108,36 @@ export function ChatScreen() {
       }
     }
     if (next.length) setAttachments((current) => [...current, ...next]);
-    if (!sawImage || !prices) return;
-    const current = prices.models.find((item) => item.id === modelId);
-    if (current?.vision) return;
-    const vision = [...prices.models].filter((item) => item.vision).sort((a, b) => a.micro_usd - b.micro_usd)[0];
-    if (!vision) {
-      setHint("No model in this list can read images.");
-      return;
-    }
-    setModelId(vision.id);
-    toast(`Switched to ${vision.name} to read your image`);
   }
 
   function chooseModel(id: string) {
-    const prices = view.prices;
-    const next = prices?.models.find((item) => item.id === id);
+    const next = view.prices?.models.find((item) => item.id === id);
     const hasImage = attachments.some((item) => item.kind === "image");
-    if (hasImage && next && !next.vision && prices) {
-      const vision = [...prices.models].filter((item) => item.vision).sort((a, b) => a.micro_usd - b.micro_usd)[0];
-      if (vision) {
-        setModelId(vision.id);
-        toast(`Switched to ${vision.name} to read your image`);
-        return;
-      }
+    if (hasImage && next?.vision === false) {
+      setHint("Remove the images before using this model.");
+      return;
     }
     setModelId(id);
   }
 
   async function send() {
     const session = readSession();
-    const prices = session?.prices;
-    const model = prices?.models.find((item) => item.id === modelId);
-    if (!session || !prices || !model || busy) return;
-    if (attachments.some((item) => item.kind === "image") && !model.vision) {
-      const vision = [...prices.models].filter((item) => item.vision).sort((a, b) => a.micro_usd - b.micro_usd)[0];
-      if (!vision) {
-        setHint("No model in this list can read images.");
+    if (!session || busy) return;
+    let prices = session.prices;
+    try {
+      prices = await session.client.prices();
+      session.prices = prices;
+      emit();
+    } catch {
+      if (!prices) {
+        setHint("Prices are unavailable.");
         return;
       }
-      setModelId(vision.id);
-      toast(`Switched to ${vision.name} to read your image`);
+    }
+    const model = prices?.models.find((item) => item.id === modelId);
+    if (!prices || !model) return;
+    if (attachments.some((item) => item.kind === "image") && model.vision === false) {
+      setHint("This model can't read images.");
       return;
     }
     setHint("");
@@ -182,7 +174,13 @@ export function ChatScreen() {
     };
     const messages = [...base.messages, user];
     const apiMessages = await expandMessages(session.network, session.keys.vaultKey, messages);
-    const body = JSON.stringify({ model: model.id, stream: true, messages: apiMessages });
+    const payload: { model: string; stream: boolean; messages: typeof apiMessages; max_tokens?: number } = {
+      model: model.id,
+      stream: true,
+      messages: apiMessages,
+    };
+    if (longer && model.metered) payload.max_tokens = 16000;
+    const body = JSON.stringify(payload);
     const bytes = new TextEncoder().encode(body).length;
     const max = (prices.attachments.max_body_mb || 20) * 1024 * 1024;
     if (bytes > max) {
@@ -199,7 +197,7 @@ export function ChatScreen() {
     patch(chat.id, (item) => ({ ...item, messages: [...messages, assistant] }));
     try {
       // The Forge covers the paid request up to the response headers; the reply then streams in.
-      const cost = chatCostMicro(model.micro_usd, bytes, prices.attachments.micro_usd_per_mb);
+      const cost = chatCostMicro(prices, model.id, body);
       const response = await forge.track(() =>
         session.client.pay("POST", "/v1/ai/chat/completions", body, cost),
       );
@@ -221,7 +219,11 @@ export function ChatScreen() {
       });
     } catch (cause) {
       setFunds(isFundsError(cause));
-      setHint(cause instanceof Error ? cause.message : "The reply failed.");
+      setHint(requestError(cause, "The reply failed."));
+      patch(chat.id, (item) => ({
+        ...item,
+        messages: item.messages.filter((message, index) => !(index === item.messages.length - 1 && message.role === "assistant" && !message.content)),
+      }));
     } finally {
       setBusy(false);
     }
@@ -263,6 +265,17 @@ export function ChatScreen() {
     setActiveId(null);
     setConfirmDelete(false);
     setSettings(false);
+  }
+
+  const selected = view.prices?.models.find((item) => item.id === modelId);
+  let longerFrom: string | null = null;
+  if (view.prices && selected?.metered) {
+    try {
+      const sample = JSON.stringify({ model: selected.id, messages: [{ role: "user", content: "hi" }], max_tokens: 16000 });
+      longerFrom = `from ${formatCredits(chatCostMicro(view.prices, selected.id, sample), view.prices.micro_usd_per_credit)} cr`;
+    } catch {
+      longerFrom = null;
+    }
   }
 
   const sidebar = (
@@ -348,6 +361,9 @@ export function ChatScreen() {
               onAttach={(files) => void attach(files)}
               onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
               hint={hint}
+              longer={longer}
+              onLonger={setLonger}
+              longerFrom={longerFrom}
             />
           </div>
         </div>

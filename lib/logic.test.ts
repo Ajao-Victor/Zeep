@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addressKind, addressProblem, isShieldedAddress } from "@/lib/zcash/address";
 import { zip321 } from "@/lib/zcash/zip321";
-import { chatCostMicro } from "@/lib/zeep/prices";
+import { chatCostMicro } from "@/lib/zeep/client";
 import { estimateDeposit, formatCredits, formatZec, parseZec, zatsToMicroUsd, bpsOf } from "@/lib/zeep/units";
 import { ACTIVITY_MS, recentActivity, spendTitle, type Activity } from "@/lib/account/activity";
 import { quizIndexes } from "@/lib/vault/phrase";
@@ -33,10 +33,39 @@ describe("units", () => {
     expect(estimate.usdMicro).toBe(BigInt(value - fee));
   });
 
-  it("prices a chat from the model plus bytes past 64 KB", () => {
-    expect(chatCostMicro(10_500, 1000, 1_000)).toBe(10_500n);
-    expect(chatCostMicro(10_500, 65536 + 1, 1_000)).toBe(11_500n);
-    expect(chatCostMicro(10_500, 65536 + 1024 * 1024, 1_000)).toBe(11_500n);
+  it("prices a flat chat from the model plus bytes past 64 KB", () => {
+    const sheet = {
+      markup_bps: 0,
+      attachments: { micro_usd_per_mb: 1_000 },
+      models: [{ id: "flat", micro_usd: 10_500, metered: null }],
+    };
+    expect(chatCostMicro(sheet, "flat", "a".repeat(1000))).toBe(10_500n);
+    expect(chatCostMicro(sheet, "flat", "a".repeat(65537))).toBe(11_500n);
+    expect(chatCostMicro(sheet, "flat", "a".repeat(65536 + 1024 * 1024))).toBe(11_500n);
+  });
+
+  it("prices a metered chat from the input and the output cap", () => {
+    const sheet = {
+      markup_bps: 0,
+      attachments: { micro_usd_per_mb: 1_000 },
+      models: [{
+        id: "frontier",
+        micro_usd: 1,
+        metered: {
+          in_usd_per_m: 1,
+          out_usd_per_m: 2,
+          min_usd: 0.01,
+          default_output: 200,
+          max_output: 16000,
+          bytes_per_token: 3,
+          image_tokens: 1500,
+          message_tokens: 8,
+        },
+      }],
+    };
+    const short = JSON.stringify({ messages: [{ content: "hi" }] });
+    const long = JSON.stringify({ messages: [{ content: "hi" }], max_tokens: 16000 });
+    expect(chatCostMicro(sheet, "frontier", long)).toBeGreaterThan(chatCostMicro(sheet, "frontier", short));
   });
 });
 

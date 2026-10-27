@@ -5,7 +5,7 @@ import { rememberSpend } from "@/lib/account/activity";
 import { cx } from "@/lib/cx";
 import { formatCredits } from "@/lib/zeep";
 import { ZeepApiError, type InboxMessage, type InboxMessageItem } from "@/lib/zeep/client";
-import { isFundsError } from "@/lib/zeep/pay";
+import { isFundsError, requestError } from "@/lib/zeep/pay";
 import { copyText } from "@/lib/vault/clipboard";
 import { readSession } from "@/lib/vault/session";
 import { clearInbox, setInbox } from "@/lib/vault/vault";
@@ -30,6 +30,7 @@ function recipientError(to: string, cc: string): string {
 }
 
 function sendError(cause: unknown): string {
+  if (cause instanceof ZeepApiError && cause.code === "daily_limit") return requestError(cause, "The message did not send.");
   if (cause instanceof ZeepApiError) {
     if (cause.status === 429 || cause.code === "rate_limited") return "Daily sending limit reached, try again tomorrow";
     if (cause.status === 400) return cause.message;
@@ -150,7 +151,7 @@ export function InboxScreen() {
       void rememberSpend(session.network, "/v1/inbox", BigInt(openPrice));
     } catch (cause) {
       setFunds(isFundsError(cause));
-      setError(cause instanceof Error ? cause.message : "The inbox did not open.");
+      setError(requestError(cause, "The inbox did not open."));
     } finally {
       setBusy("");
     }

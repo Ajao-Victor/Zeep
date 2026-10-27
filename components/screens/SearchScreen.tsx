@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiBase } from "@/lib/config";
 import { formatCredits } from "@/lib/zeep";
-import { isFundsError, payJson } from "@/lib/zeep/pay";
+import { isFundsError, payJson, requestError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { QueryBar, ResultList } from "@/components/find/QueryBar";
@@ -67,7 +67,7 @@ export function SearchScreen() {
       setHits(body.results ?? body.hits ?? []);
     } catch (cause) {
       setFunds(isFundsError(cause));
-      setError(cause instanceof Error ? cause.message : "Search failed.");
+      setError(requestError(cause, "Search failed."));
     } finally {
       setBusy(null);
     }
@@ -111,7 +111,7 @@ export function SearchScreen() {
     } catch (cause) {
       setResearchStatus("");
       setFunds(isFundsError(cause));
-      setError(cause instanceof Error ? cause.message : "Research failed.");
+      setError(requestError(cause, "Research failed."));
     } finally {
       setBusy(null);
     }

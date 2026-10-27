@@ -1,4 +1,4 @@
-import { FundsError } from "@/lib/zeep/pay";
+import { FundsError, upstreamBusy } from "@/lib/zeep/pay";
 
 type Chunk = { choices?: { delta?: { content?: string } }[] };
 
@@ -19,7 +19,7 @@ export async function readSse(response: Response, onDelta: (text: string) => voi
       if (text) message = text.slice(0, 180);
     }
     if (response.status === 402 || code === "insufficient") throw new FundsError(message);
-    throw new Error(message);
+    throw new Error(upstreamBusy(response.status, message) ?? message);
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

@@ -2,8 +2,7 @@
 
 import { useRef, type ClipboardEvent, type DragEvent, type KeyboardEvent } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import * as Tooltip from "@radix-ui/react-tooltip";
-import { formatCredits, formatZec } from "@/lib/zeep";
+import { formatCredits } from "@/lib/zeep";
 import type { PriceModel, PriceSheet } from "@/lib/zeep/prices";
 import type { Attachment } from "@/lib/chat/types";
 import { fileKind } from "@/lib/chat/files";
@@ -11,7 +10,7 @@ import type { ForgePhase } from "@/lib/fx/forge";
 import { Button } from "@/components/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Textarea } from "@/components/ui/Input";
-import { MenuContent, MenuNote, MenuRadioItem } from "@/components/ui/Menu";
+import { MenuContent, MenuRadioItem } from "@/components/ui/Menu";
 import { ProofButton } from "@/components/ui/ProofButton";
 
 export function Composer({
@@ -27,6 +26,9 @@ export function Composer({
   onAttach,
   onRemove,
   hint,
+  longer,
+  onLonger,
+  longerFrom,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -41,11 +43,14 @@ export function Composer({
   onAttach: (files: FileList | File[]) => void;
   onRemove: (id: string) => void;
   hint: string;
+  longer: boolean;
+  onLonger: (value: boolean) => void;
+  longerFrom: string | null;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const model = prices?.models.find((item) => item.id === modelId) ?? prices?.models[0];
-  const perMb = prices ? formatCredits(prices.attachments.micro_usd_per_mb, prices.micro_usd_per_credit) : "…";
+  const images = model?.vision !== false;
 
   function grow() {
     const box = boxRef.current;
@@ -122,7 +127,7 @@ export function Composer({
           type="file"
           multiple
           className="hidden"
-          accept="image/*,application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py"
+          accept={images ? "image/*,application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py" : "application/pdf,text/*,.md,.csv,.json,.js,.ts,.tsx,.py"}
           onChange={(event) => {
             if (event.target.files) onAttach(event.target.files);
             event.target.value = "";
@@ -140,10 +145,20 @@ export function Composer({
           <MenuContent side="top" align="start">
             <DropdownMenu.RadioGroup value={model?.id ?? ""} onValueChange={onModel}>
               {(prices?.models ?? []).map((item) => (
-                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} zecUsd={prices?.zec_usd ?? 0} />
+                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} />
               ))}
             </DropdownMenu.RadioGroup>
-            <MenuNote>Attachments over 64 KB add {perMb} cr per MB.</MenuNote>
+            {model?.metered ? (
+              <button
+                type="button"
+                aria-pressed={longer}
+                onClick={() => onLonger(!longer)}
+                className="mt-1 flex w-full items-center justify-between gap-3 border-t border-line px-3 py-2 text-left text-[14px] text-text"
+              >
+                <span>Longer answers</span>
+                {longerFrom ? <span className="shrink-0 font-mono text-[12px] text-gold">{longerFrom}</span> : null}
+              </button>
+            ) : null}
           </MenuContent>
         </DropdownMenu.Root>
         <ProofButton size="sm" phase={phase} label="Send" disabled={busy} onClick={onSend} className="ml-auto" />
@@ -152,8 +167,7 @@ export function Composer({
   );
 }
 
-function ModelRow({ item, perCredit, zecUsd }: { item: PriceModel; perCredit: number; zecUsd: number }) {
-  const zats = !zecUsd || item.micro_usd <= 0 ? 0n : BigInt(Math.floor((item.micro_usd / 1e6 / zecUsd) * 1e8));
+function ModelRow({ item, perCredit }: { item: PriceModel; perCredit: number }) {
   return (
     <MenuRadioItem value={item.id}>
       <span className="flex items-center justify-between gap-3">
@@ -162,16 +176,7 @@ function ModelRow({ item, perCredit, zecUsd }: { item: PriceModel; perCredit: nu
           {item.detail ? <span className="block truncate text-[12px] text-faint">{item.detail}</span> : null}
           {item.vision ? <span className="mt-1 inline-block rounded-full border border-line px-2 py-0.5 text-[11px] text-muted">reads images</span> : null}
         </span>
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <span className="shrink-0 font-mono text-[12px] text-gold">{formatCredits(item.micro_usd, perCredit)} cr</span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content className="z-50 rounded-lg border border-line bg-bg px-2 py-1 text-[12px]">{formatZec(zats)} ZEC</Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </Tooltip.Provider>
+        <span className="shrink-0 font-mono text-[12px] text-gold">from {formatCredits(item.micro_usd, perCredit)} cr</span>
       </span>
     </MenuRadioItem>
   );

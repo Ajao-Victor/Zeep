@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { isFundsError, payJson } from "@/lib/zeep/pay";
+import { isFundsError, payJson, requestError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
 import { Button } from "@/components/Button";
 import { QueryBar, ResultList } from "@/components/find/QueryBar";
@@ -64,7 +64,7 @@ export function HealthScreen() {
       setAnswer(healthView(body));
     } catch (cause) {
       setFunds(isFundsError(cause));
-      setError(cause instanceof Error ? cause.message : "The lookup failed.");
+      setError(requestError(cause, "The lookup failed."));
     } finally {
       setBusy(false);
     }
