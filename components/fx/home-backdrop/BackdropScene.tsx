@@ -16,8 +16,13 @@ const QUALITY = {
   3: { stars: 7000, lattices: 8, dpr: [1, 1.5] as [number, number] },
 };
 
+// The last stage before HomeBackdrop gives up on WebGL: about a quarter of the pixels to fill.
+const LEAN = { stars: 1200, lattices: 4, dpr: [0.5, 0.6] as [number, number] };
+
 type Props = {
   tier: 2 | 3;
+  /** Lighter: fewer stars and lattices at about half the pixel density. */
+  lean: boolean;
   active: boolean;
   onFps: (fps: number) => void;
   onLost: () => void;
@@ -246,7 +251,7 @@ function Lattices({ count, travel }: { count: number; travel: { current: number 
   );
 }
 
-function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady">) {
+function World({ quality, onFps, onReady }: Pick<Props, "onFps" | "onReady"> & { quality: typeof LEAN }) {
   const aim = useRef({ x: 0, y: 0 });
   const scroll = useRef(0);
   const travel = useRef(0);
@@ -285,7 +290,6 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
     sample(delta);
   });
 
-  const quality = QUALITY[tier];
   return (
     <>
       <Floor travel={travel} />
@@ -296,7 +300,8 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
 }
 
 /** Tiers 2 and 3: the landing page's WebGL backdrop. Loaded on demand; never imported by app routes. */
-export default function BackdropScene({ tier, active, onFps, onLost, onReady }: Props) {
+export default function BackdropScene({ tier, lean, active, onFps, onLost, onReady }: Props) {
+  const quality = lean ? LEAN : QUALITY[tier];
   const [warm, setWarm] = useState(false);
   const onWarm = useCallback(() => setWarm(true), []);
   const stopWatching = useRef<(() => void) | null>(null);
@@ -304,7 +309,7 @@ export default function BackdropScene({ tier, active, onFps, onLost, onReady }: 
   return (
     <Canvas
       aria-hidden="true"
-      dpr={QUALITY[tier].dpr}
+      dpr={quality.dpr}
       frameloop={active && warm ? "always" : "never"}
       camera={{ position: [0, 0, 0], fov: 60, near: 0.1, far: DEPTH + 20 }}
       gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
@@ -315,7 +320,7 @@ export default function BackdropScene({ tier, active, onFps, onLost, onReady }: 
         stopWatching.current = watchContextLoss(gl.domElement, onLost);
       }}
     >
-      <World tier={tier} onFps={onFps} onReady={onReady} />
+      <World quality={quality} onFps={onFps} onReady={onReady} />
       <Warmup onWarm={onWarm} />
     </Canvas>
   );
