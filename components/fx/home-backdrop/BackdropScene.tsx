@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANON, GOLD, IDENTITY } from "@/components/fx/proof-gate/layout";
+import { watchContextLoss } from "@/lib/fx/context";
+import { createFpsSampler } from "@/lib/fx/fps";
 import { Warmup } from "@/components/fx/Warmup";
 
 // Depth of the field in world units. Everything flows toward the camera and wraps at this depth.
@@ -14,8 +16,13 @@ const QUALITY = {
   3: { stars: 7000, lattices: 8, dpr: [1, 1.5] as [number, number] },
 };
 
+// The last stage before HomeBackdrop gives up on WebGL: about a quarter of the pixels to fill.
+const LEAN = { stars: 1200, lattices: 4, dpr: [0.5, 0.6] as [number, number] };
+
 type Props = {
   tier: 2 | 3;
+  /** Lighter: fewer stars and lattices at about half the pixel density. */
+  lean: boolean;
   active: boolean;
   onFps: (fps: number) => void;
   onLost: () => void;
@@ -244,11 +251,13 @@ function Lattices({ count, travel }: { count: number; travel: { current: number 
   );
 }
 
-function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady">) {
+function World({ quality, onFps, onReady }: Pick<Props, "onFps" | "onReady"> & { quality: typeof LEAN }) {
   const aim = useRef({ x: 0, y: 0 });
   const scroll = useRef(0);
   const travel = useRef(0);
-  const perf = useRef({ frames: 0, time: 0, warm: 0, ready: false });
+  const started = useRef(false);
+  // A new sampler per quality level, so a lighter level gets a fresh warm-up and two fresh windows.
+  const sample = useMemo(() => createFpsSampler(onFps), [onFps, quality]);
 
   useEffect(() => {
     const move = (event: PointerEvent) => {
@@ -274,29 +283,14 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
     camera.position.y += (-aim.current.y * 0.9 - camera.position.y) * 0.04;
     camera.lookAt(0, -1, -40);
 
-    const sample = perf.current;
-    if (!sample.ready) {
-      sample.ready = true;
+    if (!started.current) {
+      started.current = true;
       onReady();
     }
-    // Sustained frame rate in 2 s windows after a 1.5 s warm-up, as in the Proof Gate.
-    if (delta > 0.5) {
-      sample.frames = 0;
-      sample.time = 0;
-      return;
-    }
-    sample.warm += delta;
-    if (sample.warm < 1.5) return;
-    sample.frames += 1;
-    sample.time += delta;
-    if (sample.time >= 2) {
-      onFps(sample.frames / sample.time);
-      sample.frames = 0;
-      sample.time = 0;
-    }
+    // Sustained frame rate for the tier step-down (lib/fx/fps.ts).
+    sample(delta);
   });
 
-  const quality = QUALITY[tier];
   return (
     <>
       <Floor travel={travel} />
@@ -307,30 +301,27 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
 }
 
 /** Tiers 2 and 3: the landing page's WebGL backdrop. Loaded on demand; never imported by app routes. */
-export default function BackdropScene({ tier, active, onFps, onLost, onReady }: Props) {
+export default function BackdropScene({ tier, lean, active, onFps, onLost, onReady }: Props) {
+  const quality = lean ? LEAN : QUALITY[tier];
   const [warm, setWarm] = useState(false);
   const onWarm = useCallback(() => setWarm(true), []);
+  const stopWatching = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopWatching.current?.(), []);
   return (
     <Canvas
       aria-hidden="true"
-      dpr={QUALITY[tier].dpr}
+      dpr={quality.dpr}
       frameloop={active && warm ? "always" : "never"}
       camera={{ position: [0, 0, 0], fov: 60, near: 0.1, far: DEPTH + 20 }}
       gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0 }}
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0);
-        gl.domElement.addEventListener(
-          "webglcontextlost",
-          (event) => {
-            event.preventDefault();
-            onLost();
-          },
-          { once: true },
-        );
+        // A lost context gets a few seconds to come back before the scene falls back.
+        stopWatching.current = watchContextLoss(gl.domElement, onLost);
       }}
     >
-      <World tier={tier} onFps={onFps} onReady={onReady} />
+      <World quality={quality} onFps={onFps} onReady={onReady} />
       <Warmup onWarm={onWarm} />
     </Canvas>
   );
