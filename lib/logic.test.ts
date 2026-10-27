@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addressKind, addressProblem, isShieldedAddress } from "@/lib/zcash/address";
 import { zip321 } from "@/lib/zcash/zip321";
+import { fitContext, inputTokens } from "@/lib/chat/context";
 import { chatCostMicro } from "@/lib/zeep/client";
 import { estimateDeposit, formatCredits, formatZec, parseZec, zatsToMicroUsd, bpsOf } from "@/lib/zeep/units";
 import { ACTIVITY_MS, recentActivity, spendTitle, type Activity } from "@/lib/account/activity";
@@ -67,6 +68,28 @@ describe("units", () => {
     const short = JSON.stringify({ messages: [{ content: "hi" }] });
     const long = JSON.stringify({ messages: [{ content: "hi" }], max_tokens: 16000 });
     expect(chatCostMicro(sheet, "frontier", long)).toBeGreaterThan(chatCostMicro(sheet, "frontier", short));
+  });
+});
+
+describe("chat context", () => {
+  const rate = { bytes_per_token: 3, image_tokens: 1500, message_tokens: 8 };
+
+  it("drops the oldest messages and keeps a system message", () => {
+    const messages = [
+      { role: "system", content: "stay" },
+      { role: "user", content: "old" },
+      { role: "assistant", content: "old reply" },
+      { role: "user", content: "new" },
+    ];
+    const keep = inputTokens([messages[0], messages[3]], rate);
+    const fit = fitContext(messages, rate, keep);
+    expect(fit?.dropped).toBe(2);
+    expect(fit?.messages.map((message) => message.content)).toEqual(["stay", "new"]);
+  });
+
+  it("asks for a new chat when the newest message still does not fit", () => {
+    const messages = [{ role: "user", content: "x".repeat(300) }];
+    expect(fitContext(messages, rate, 10)).toBeNull();
   });
 });
 

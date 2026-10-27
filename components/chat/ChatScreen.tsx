@@ -8,6 +8,7 @@ import { chatCostMicro } from "@/lib/zeep/client";
 import { isFundsError, requestError } from "@/lib/zeep/pay";
 import { readSse } from "@/lib/api/sse";
 import { emit, readSession } from "@/lib/vault/session";
+import { fitContext, inputTokens, maxInputTokens, type ApiChatMessage } from "@/lib/chat/context";
 import { expandMessages, readAttachment, storedParts } from "@/lib/chat/files";
 import { deleteAllDeviceFiles, saveDeviceFile } from "@/lib/chat/blobs";
 import { deleteChat, loadChats, readChatPrefs, saveChat, writeChatPrefs } from "@/lib/chat/store";
@@ -174,16 +175,27 @@ export function ChatScreen() {
     };
     const messages = [...base.messages, user];
     const apiMessages = await expandMessages(session.network, session.keys.vaultKey, messages);
-    const payload: { model: string; stream: boolean; messages: typeof apiMessages; max_tokens?: number } = {
+    const requested = longer && model.metered ? 16000 : undefined;
+    let outbound: ApiChatMessage[] = apiMessages;
+    let leftOut = false;
+    const room = model.metered ? maxInputTokens(model.metered, requested) : null;
+    if (model.metered && room !== null && inputTokens(outbound, model.metered) > room) {
+      const fit = fitContext(outbound, model.metered, room);
+      if (!fit) {
+        setHint("Start a new chat");
+        return;
+      }
+      outbound = fit.messages;
+      leftOut = fit.dropped > 0;
+    }
+    const maxBytes = (prices.attachments.max_body_mb || 20) * 1024 * 1024;
+    const firstBody = JSON.stringify({
       model: model.id,
       stream: true,
-      messages: apiMessages,
-    };
-    if (longer && model.metered) payload.max_tokens = 16000;
-    const body = JSON.stringify(payload);
-    const bytes = new TextEncoder().encode(body).length;
-    const max = (prices.attachments.max_body_mb || 20) * 1024 * 1024;
-    if (bytes > max) {
+      messages: outbound,
+      ...(requested ? { max_tokens: requested } : {}),
+    });
+    if (new TextEncoder().encode(firstBody).length > maxBytes) {
       setHint(`This message is over ${prices.attachments.max_body_mb} MB.`);
       return;
     }
@@ -196,12 +208,34 @@ export function ChatScreen() {
     const assistant: ChatMessage = { role: "assistant", content: "", model: model.id };
     patch(chat.id, (item) => ({ ...item, messages: [...messages, assistant] }));
     try {
-      // The Forge covers the paid request up to the response headers; the reply then streams in.
-      const cost = chatCostMicro(prices, model.id, body);
-      const response = await forge.track(() =>
-        session.client.pay("POST", "/v1/ai/chat/completions", body, cost),
-      );
+      let response: Response | null = null;
+      let cost = 0n;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const payload: { model: string; stream: boolean; messages: ApiChatMessage[]; max_tokens?: number } = {
+          model: model.id,
+          stream: true,
+          messages: outbound,
+        };
+        if (requested) payload.max_tokens = requested;
+        const body = JSON.stringify(payload);
+        if (new TextEncoder().encode(body).length > maxBytes) {
+          throw new Error(`This message is over ${prices.attachments.max_body_mb} MB.`);
+        }
+        cost = chatCostMicro(prices, model.id, body);
+        // The Forge covers the paid request up to the response headers; the reply then streams in.
+        response = await forge.track(() => session.client.pay("POST", "/v1/ai/chat/completions", body, cost));
+        if (response.ok) break;
+        const err = (await response.clone().json().catch(() => null)) as { error?: { code?: string; max_input_tokens?: number } } | null;
+        const maxInput = err?.error?.max_input_tokens;
+        if (response.status !== 400 || err?.error?.code !== "context_too_long" || !model.metered || typeof maxInput !== "number") break;
+        const fit = fitContext(outbound, model.metered, maxInput);
+        if (!fit || fit.dropped === 0) throw new Error("Start a new chat");
+        outbound = fit.messages;
+        leftOut = true;
+      }
+      if (!response) throw new Error("Start a new chat");
       if (response.ok) void rememberSpend(session.network, "/v1/ai/chat/completions", cost);
+      if (response.ok && leftOut) setHint("Older messages were left out of this reply.");
       let text = "";
       await readSse(response, (delta) => {
         text += delta;

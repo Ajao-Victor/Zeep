@@ -9,6 +9,8 @@ export type MeteredRate = {
   bytes_per_token: number;
   image_tokens: number;
   message_tokens: number;
+  /** Model context window. The price sheet sends this for metered models. */
+  context?: number;
 };
 
 export type PriceModel = {
