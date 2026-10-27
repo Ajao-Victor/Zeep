@@ -391,6 +391,7 @@ export function ChatScreen() {
               modelId={modelId}
               onModel={chooseModel}
               prices={view.prices}
+              pricesError={view.pricesError}
               attachments={attachments}
               onAttach={(files) => void attach(files)}
               onRemove={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}

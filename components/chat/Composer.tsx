@@ -26,6 +26,7 @@ export function Composer({
   onAttach,
   onRemove,
   hint,
+  pricesError,
   longer,
   onLonger,
   longerFrom,
@@ -43,13 +44,15 @@ export function Composer({
   onAttach: (files: FileList | File[]) => void;
   onRemove: (id: string) => void;
   hint: string;
+  pricesError?: string | null;
   longer: boolean;
   onLonger: (value: boolean) => void;
   longerFrom: string | null;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
-  const model = prices?.models.find((item) => item.id === modelId) ?? prices?.models[0];
+  const models = prices?.models ?? [];
+  const model = models.find((item) => item.id === modelId) ?? models[0];
   const images = model?.vision !== false;
 
   function grow() {
@@ -116,6 +119,7 @@ export function Composer({
         className="max-h-40"
       />
       {hint ? <p className="mt-1 text-[12px] text-warn">{hint}</p> : null}
+      {!hint && !prices?.models.length && pricesError ? <p className="mt-1 text-[12px] text-warn">{pricesError}</p> : null}
       <div className="mt-2 flex items-center gap-2">
         <IconButton variant="glass" label="Attach a file" onClick={() => fileRef.current?.click()}>
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -143,11 +147,15 @@ export function Composer({
             </Button>
           </DropdownMenu.Trigger>
           <MenuContent side="top" align="start" className="w-[min(26rem,calc(100vw-2rem))]">
-            <DropdownMenu.RadioGroup value={model?.id ?? ""} onValueChange={onModel}>
-              {(prices?.models ?? []).map((item) => (
-                <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} />
-              ))}
-            </DropdownMenu.RadioGroup>
+            {models.length === 0 ? (
+              <p className="px-3 py-2 text-[13px] text-muted">{pricesError || "Models are still loading."}</p>
+            ) : (
+              <DropdownMenu.RadioGroup value={model?.id ?? ""} onValueChange={onModel}>
+                {models.map((item) => (
+                  <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} />
+                ))}
+              </DropdownMenu.RadioGroup>
+            )}
             {model?.metered ? (
               <button
                 type="button"

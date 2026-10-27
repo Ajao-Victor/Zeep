@@ -104,6 +104,7 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
     usdMicro: book.balance(USD),
     zecZats: book.balance(ZEC),
     prices: null,
+    pricesError: null,
     wallet: null,
   });
   await kvSet(storeKey.meta(network), { ...meta, failedAttempts: 0, wipedAt: undefined });
@@ -113,9 +114,15 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
     const current = readSession();
     if (current?.network === network) {
       current.prices = prices;
+      current.pricesError = null;
       emit();
     }
-  }).catch(() => {});
+  }).catch((cause) => {
+    const current = readSession();
+    if (current?.network !== network) return;
+    current.pricesError = cause instanceof Error ? cause.message : "Prices are unavailable.";
+    emit();
+  });
 }
 
 async function readEncrypted(network: Network, key: CryptoKey) {

@@ -39,6 +39,7 @@ async function bodyBytes(body: unknown): Promise<Uint8Array> {
 
 export function ohttpFetch(o: OhttpFetchOptions): typeof fetch {
   const base = o.baseUrl.replace(/\/+$/, "");
+  if (!base) throw new OhttpError("ohttpFetch needs an API base URL");
   const key = typeof o.keyConfig === "string" ? parseKeyConfig(o.keyConfig) : o.keyConfig;
   const net = o.fetch ?? ((...a: Parameters<typeof fetch>) => globalThis.fetch(...a));
 

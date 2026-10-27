@@ -56,6 +56,8 @@ export type Session = {
   usdMicro: bigint;
   zecZats: bigint;
   prices: PriceSheet | null;
+  /** Why the price sheet, including the model list, did not load. */
+  pricesError?: string | null;
   wallet: WalletHold | null;
 };
 
