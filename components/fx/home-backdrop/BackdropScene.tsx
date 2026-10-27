@@ -198,7 +198,7 @@ function Lattices({ count, travel }: { count: number; travel: { current: number 
       const side = index % 2 ? 1 : -1;
       return {
         geometry,
-        x: side * (9 + Math.random() * 9),
+        x: side * (13 + Math.random() * 9),
         y: -2 + Math.random() * 9,
         z: -(index / count) * DEPTH,
         spin: 0.15 + Math.random() * 0.25,
@@ -219,9 +219,12 @@ function Lattices({ count, travel }: { count: number; travel: { current: number 
       child.position.set(lattice.x, lattice.y + Math.sin(time * 0.5 + lattice.bob) * 0.6, z);
       child.rotation.x += delta * lattice.spin;
       child.rotation.y += delta * lattice.spin * 0.7;
+      // Visible only in the near part of the field, where perspective has pushed them out to the
+      // sides; far away they would project behind the page's text.
       const near = 1 + z / DEPTH;
       const line = child as THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>;
-      line.material.opacity = Math.min(1, near * 4) * (1 - Math.max(0, near - 0.85) / 0.15) * 0.45;
+      const { smoothstep } = THREE.MathUtils;
+      line.material.opacity = smoothstep(near, 0.55, 0.75) * (1 - smoothstep(near, 0.9, 1)) * 0.32;
     });
   });
 
