@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/Toast";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { VaultState } from "@/components/VaultState";
+import { SignedInRedirect } from "@/components/landing/SignedInRedirect";
 
 export { useVault } from "@/components/VaultState";
 export type { VaultView } from "@/components/VaultState";
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
               Skip to content
             </a>
             <SiteHeader />
+            {pathname === "/" ? <SignedInRedirect /> : null}
             <div id="content" className={fill ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "flex-1"}>
               {children}
             </div>

@@ -87,7 +87,11 @@ Fifteen routes. Public pages work without a pass. Anything that spends or withdr
 | `/agents` | Move ZEC notes to another spend key | Yes |
 | `/reserve` | Public books: owed, held, coverage, deposits, services, in dollars | No |
 
-The header credit link goes to `/credits`. Below 400 px the "Open a balance" button reads "Start" so it fits. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
+The header credit link goes to `/credits`. Below 400 px the "Open a balance" button reads "Start" so it fits.
+
+**Header by account state.** Without an account on the device, the header shows Services (scrolls to the `#how` section with the five services), How it works (`#how`), FAQ (`#faq`) and "Open a balance" (`/get`). Wallet is not listed: it needs a balance. Once a vault exists, those landing-page links are hidden and the logo goes to `/services`. A locked vault gets an Unlock button (not on `/unlock` itself), and an unlocked one gets the credits, Lock and Sign out, plus the in-app nav.
+
+**The landing page is for devices without an account.** `components/landing/SignedInRedirect.tsx`, mounted by `Providers` on `/` so the landing bundle stays at about 114 kB, sends an unlocked balance to `/services` and a locked one to `/unlock?next=/services`. On a full page load, an inline `<head>` script (`lib/account/hint.ts`) does the same before first paint, using a one-bit localStorage hint, so a returning device never sees the landing page flash. The app-route guard sends a device with no vault to `/`. Signing out deletes the vault and returns to `/`, which is the only way back to the landing page. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
 
 ## Design system
 
@@ -281,6 +285,8 @@ IndexedDB database `zeep`, one `kv` store. Keys are split by network. The server
 | `chat:<network>:<id>`, `chat-ids:<network>`, `chat-prefs:<network>` | Chats, the id list, and the sync / auto-delete toggles | Chats yes. Prefs no |
 | `fee-day:<network>` | UTC day of the last withdrawal whose network fee Zeep covered | No personal data |
 | `prefs` | The selected network | No personal data |
+
+**localStorage:** one key, `zeep:account:<network>` = `1`, while this device holds a vault for that network. It lets the `<head>` script skip the landing page before IndexedDB can be read. It carries no secret, since the vault's existence is visible in IndexedDB anyway, and VaultState rewrites it from the real status on every refresh, so sign-out and a wipe remove it.
 
 A v1 vault (the old credit model) does not open. The user restores the 24 words.
 

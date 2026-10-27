@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { config } from "@/lib/config";
 import { Providers } from "@/components/Providers";
+import { accountHintScript } from "@/lib/account/hint";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -18,6 +19,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <head>
+        {/* Before first paint: a returning device skips the landing page (see lib/account/hint.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: accountHintScript }} />
+      </head>
       <body className="bg-bg font-sans text-[15px] text-text antialiased">
         <Providers>{children}</Providers>
       </body>

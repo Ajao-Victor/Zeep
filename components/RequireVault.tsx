@@ -14,7 +14,7 @@ export function RequireVault({ children }: { children: ReactNode }) {
     if (!view.ready) return;
     if (view.status === "unlocked") return;
     if (view.status === "wiped") router.replace("/restore");
-    else if (view.status === "empty") router.replace("/get");
+    else if (view.status === "empty") router.replace("/");
     else router.replace(`/unlock?next=${encodeURIComponent(pathname)}`);
   }, [view.ready, view.status, router, pathname]);
 

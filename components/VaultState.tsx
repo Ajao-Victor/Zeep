@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { config, type Network } from "@/lib/config";
+import { setAccountHint } from "@/lib/account/hint";
 import { formatCredits, formatUsd, formatZec, zatsToMicroUsd } from "@/lib/zeep";
 import type { PriceSheet } from "@/lib/zeep/prices";
 import { setDoorIntent, type DoorIntent } from "@/lib/fx/doorIntent";
@@ -96,10 +97,13 @@ export function VaultState({ children }: { children: ReactNode }) {
     const prefs = await readPrefs();
     const session = readSession();
     if (session?.network === prefs.network) {
+      if (prefs.network === config.network) setAccountHint(true);
       setView(fromSession(prefs.network));
       return;
     }
     const status = await vaultStatus(prefs.network);
+    // The hint covers this build's network only (one frontend per network).
+    if (prefs.network === config.network) setAccountHint(status === "locked");
     setView({ ...blank(prefs.network), ready: true, status });
   }, []);
 
