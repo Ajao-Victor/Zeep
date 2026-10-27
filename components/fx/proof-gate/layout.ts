@@ -1,7 +1,7 @@
 // Where the Proof Gate's parts sit, in CSS pixels of the scene box. Every tier (poster, 2D canvas,
 // WebGL) and the DOM labels read this, so they line up exactly.
 
-export const LANES = ["Private AI", "Search", "Health", "Chain", "Inbox"] as const;
+export const LANES = ["Private AI", "Search", "Health", "Inbox"] as const;
 
 /** Identity colours (styles/tokens.css --id-1..6); a canvas or shader can't read CSS variables. */
 export const IDENTITY = ["#c9785d", "#7fa7c9", "#b58ac9", "#8fbf9a", "#c9b26a", "#c98aa6"] as const;
