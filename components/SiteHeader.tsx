@@ -15,7 +15,6 @@ import { IconButton } from "@/components/ui/IconButton";
 const PUBLIC = [
   { href: "/services", label: "Services" },
   { href: "/#how", label: "How it works" },
-  { href: "/wallet", label: "Wallet" },
   { href: "/#faq", label: "FAQ" },
 ];
 
