@@ -14,6 +14,11 @@ export const SERVICES: {
   { id: "inbox", name: "Anonymous inbox", href: "/inbox", summary: "Email tied to no name or number.", route: "inbox" },
 ];
 
+/** The service whose page is exactly `path`, or null. Used to trust a `next` query parameter. */
+export function serviceAt(path: string | null) {
+  return SERVICES.find((service) => service.href === path) ?? null;
+}
+
 export const CHAINS = [
   { id: "ethereum", label: "Ethereum" },
   { id: "base", label: "Base" },
