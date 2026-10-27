@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { config } from "@/lib/config";
 import { readSignals, chooseTier, stepDown, type Tier } from "@/lib/fx/tier";
+import { whenIdle } from "@/lib/fx/idle";
 import { LANES, sceneLayout } from "@/components/fx/proof-gate/layout";
 import { LiteScene } from "@/components/fx/proof-gate/LiteScene";
 import { Poster } from "@/components/fx/proof-gate/Poster";
@@ -18,15 +19,6 @@ const EDGE_FADE = {
   WebkitMaskImage: "linear-gradient(to right, transparent, #000 14%), linear-gradient(to bottom, transparent, #000 12%)",
   WebkitMaskComposite: "source-in",
 } as const;
-
-function whenIdle(run: () => void): () => void {
-  if (typeof window.requestIdleCallback === "function") {
-    const id = window.requestIdleCallback(run, { timeout: 1500 });
-    return () => window.cancelIdleCallback(id);
-  }
-  const id = window.setTimeout(run, 200);
-  return () => window.clearTimeout(id);
-}
 
 /**
  * Picks the Proof Gate tier for this device and renders it inside a box that fills its parent:

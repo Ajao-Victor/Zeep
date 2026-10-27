@@ -23,7 +23,6 @@ const APP = [
   ["/ai", "AI"],
   ["/search", "Search"],
   ["/health", "Health"],
-  ["/chain", "Chain"],
   ["/inbox", "Inbox"],
   ["/agents", "Agents"],
   ["/wallet", "Wallet"],

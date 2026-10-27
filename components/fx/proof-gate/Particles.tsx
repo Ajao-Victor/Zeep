@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { ANON, GOLD, IDENTITY } from "@/components/fx/proof-gate/layout";
+import { ANON, GOLD, IDENTITY, LANES } from "@/components/fx/proof-gate/layout";
+
+// One lane per service; the shader's lane array is sized from it.
+const LANE_COUNT = LANES.length;
 
 export type Flow = {
   startX: number;
@@ -36,7 +39,7 @@ const vertex = /* glsl */ `
   uniform float uSpreadTop;
   uniform float uSpreadBottom;
   uniform float uLaneStart;
-  uniform float uLanes[5];
+  uniform float uLanes[${LANE_COUNT}];
   uniform vec3 uPointer;
   uniform vec3 uGold;
   uniform vec3 uAnon;
@@ -46,11 +49,11 @@ const vertex = /* glsl */ `
   varying float vAlpha;
 
   float laneY(float lane) {
-    if (lane < 0.5) return uLanes[0];
-    if (lane < 1.5) return uLanes[1];
-    if (lane < 2.5) return uLanes[2];
-    if (lane < 3.5) return uLanes[3];
-    return uLanes[4];
+    float y = uLanes[0];
+    for (int i = 1; i < ${LANE_COUNT}; i++) {
+      if (lane > float(i) - 0.5) y = uLanes[i];
+    }
+    return y;
   }
 
   void main() {
@@ -124,7 +127,7 @@ export function Particles({
       speed[index] = 0.07 + Math.random() * 0.07;
       y0[index] = Math.random();
       offset[index] = Math.random() * 2 - 1;
-      lane[index] = Math.floor(Math.random() * 5);
+      lane[index] = Math.floor(Math.random() * LANE_COUNT);
       tint.set(IDENTITY[index % IDENTITY.length]);
       color.set([tint.r, tint.g, tint.b], index * 3);
       depth[index * 3 + 2] = (Math.random() - 0.5) * 0.8;
@@ -159,7 +162,7 @@ export function Particles({
         uSpreadTop: { value: 0 },
         uSpreadBottom: { value: 0 },
         uLaneStart: { value: 0 },
-        uLanes: { value: [0, 0, 0, 0, 0] },
+        uLanes: { value: new Array<number>(LANE_COUNT).fill(0) },
         uPointer: { value: new THREE.Vector3() },
         uGold: { value: new THREE.Color(GOLD) },
         uAnon: { value: new THREE.Color(ANON) },

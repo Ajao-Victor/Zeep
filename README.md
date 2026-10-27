@@ -1,6 +1,6 @@
 # Zeep
 
-Private, pay-per-request access to AI, search and on-chain services, paid for with shielded Zcash. You don't need an account or a login, and nothing on the server knows who you are.
+Private, pay-per-request access to AI, search, health lookups and an anonymous inbox, paid for with shielded Zcash. You don't need an account or a login, and nothing on the server knows who you are.
 
 Zeep is the browser frontend. Every secret stays on your device: the 24-word recovery phrase, the PIN and the spend key never leave it. Each paid request carries a Groth16 zero-knowledge proof that it was paid for. The proof hides which balance paid, so the backend sees the request but not the requester.
 
@@ -26,7 +26,7 @@ Zeep is the browser frontend. Every secret stays on your device: the 24-word rec
 
 1. **Open a balance.** On `/get` the app creates a 24-word phrase. You write it down by hand (there is deliberately no copy button), confirm three of the words, and set a 6-digit PIN. A passkey is optional. The phrase is encrypted with a key derived from the PIN with Argon2id and stored in IndexedDB.
 2. **Deposit ZEC.** `/deposit` shows a fresh shielded address as a ZIP 321 QR code, payable from any Zcash wallet or from the built-in wallet. Half of each deposit stays as shielded ZEC. The other half becomes fixed dollar notes, minus a 1.5% conversion fee.
-3. **Use services.** Every paid request (chat, search, health lookups, chain RPC, inbox) spends dollar notes with a Groth16 proof built in a Web Worker. The server checks the proof and returns a change note. It never learns which notes were spent or whose they are.
+3. **Use services.** Every paid request (chat, search, health lookups, inbox) spends dollar notes with a Groth16 proof built in a Web Worker. The server checks the proof and returns a change note. It never learns which notes were spent or whose they are.
 4. **Withdraw.** `/credits` sends ZEC to any shielded address, or to a transparent one after you confirm it will be public. When the ZEC notes don't cover the amount, the app converts credits first, after asking for confirmation and re-authentication.
 
 Your balance is shown as **credits** (1 credit = $1): the dollar notes plus the ZEC notes at the live price. When dollars run low, the client tops them up from your ZEC in stages, inside the payment itself.
@@ -38,7 +38,6 @@ Your balance is shown as **credits** (1 credit = $1): the dollar notes plus the 
 | Private AI (`/ai`) | Streamed chat with a model picker, image, text and PDF attachments, and history encrypted on the device with optional ciphertext sync |
 | Search (`/search`) | One paid web search per request |
 | Health (`/health`) | Drug and clinical-trial lookups |
-| Chain (`/chain`) | Paid JSON-RPC to Ethereum, Base and Solana |
 | Inbox (`/inbox`) | Anonymous inboxes |
 | Agents (`/agents`) | Move ZEC notes to another spend key |
 | Wallet | An in-app Zcash wallet (ChainSafe WebZjs) that shields transparent funds automatically and can pay deposits |
@@ -50,7 +49,8 @@ Your balance is shown as **credits** (1 credit = $1): the dollar notes plus the 
 
 Motion is kept for three moments, and each one reacts only to real cryptographic events, never to timers.
 
-- **The Proof Gate** (landing page). A live three.js scene: requests arrive in six identity colours, pass through a rotating gold lattice (the proof) and leave as anonymous white points along five lanes to the services. The scene picks a quality tier per device: WebGL ultra or standard, a 2D canvas, or a still SVG poster. It drops a tier when the frame rate sags and pauses when off screen.
+- **The Proof Gate** (landing page). A live three.js scene: requests arrive in six identity colours, pass through a rotating gold lattice (the proof) and leave as anonymous white points along four lanes to the services. The scene picks a quality tier per device: WebGL ultra or standard, a 2D canvas, or a still SVG poster. It drops a tier when the frame rate sags and pauses when off screen.
+- **The floating landing page.** The home page floats in glass over a full-page 3D backdrop: a WebGL field of requests flowing toward the viewer over a gold grid floor, with drifting lattices (a CSS version on lighter devices, still under reduced motion). Cards bob, rise in on scroll and tilt toward the pointer.
 - **The Forge** (every paid button). The button becomes a small gold forge driven by the real proof: preparing → proving → sending → settled, or failed.
 - **The Vault Door** (create, unlock, lock, network switch). A CSS 3D door whose rings turn exactly while Argon2id derives the key. It then opens, seals, jolts on a wrong PIN, or swings shut on lock.
 
@@ -141,7 +141,7 @@ When the circuit changes, replace `public/circuits/zeep_spend.wasm` and `zeep_sp
 ```text
 app/
   (marketing)/          landing page and /privacy
-  (app)/                services, ai, search, health, chain, inbox, deposit, credits, agents
+  (app)/                services, ai, search, health, inbox, deposit, credits, agents
   get/ unlock/ restore/ reserve/
 components/
   flows/                create, unlock, restore and re-authentication flows

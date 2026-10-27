@@ -29,8 +29,8 @@ export function GetFlow() {
   const { view } = useVault();
   const router = useRouter();
   const [step, setStep] = useState<Step>("Welcome");
-  // A landing service card opens /get?next=<service>: once the balance exists, go there instead of
-  // /services. Only the five service routes are accepted. Read after mount (the page is static).
+  // A landing service card opens /get?next=<service>: once the balance exists, go there instead
+  // of /services. Only the routes in SERVICES are accepted. Read after mount (the page is static).
   const [next, setNext] = useState<ReturnType<typeof serviceAt>>(null);
   useEffect(() => setNext(serviceAt(new URLSearchParams(window.location.search).get("next"))), []);
   const [pin, setPin] = useState("");

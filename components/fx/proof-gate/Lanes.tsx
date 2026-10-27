@@ -3,8 +3,9 @@
 import { ANON } from "@/components/fx/proof-gate/layout";
 
 /**
- * The five service lanes after the gate, each ending at a thin glass monolith. `px` is one CSS
- * pixel in world units, so hairlines stay one pixel at any size. Labels are DOM, not 3D text.
+ * The service lanes after the gate (one per entry in LANES), each ending at a thin glass
+ * monolith. `px` is one CSS pixel in world units, so hairlines stay one pixel at any size.
+ * Labels are DOM, not 3D text.
  */
 export function Lanes({ lanes, start, end, px }: { lanes: number[]; start: number; end: number; px: number }) {
   const length = Math.max(0, end - start);

@@ -88,11 +88,6 @@ export const refundResultSchema = z.object({
   tranche2: trancheSchema,
 });
 
-export const chainInfoSchema = z.object({
-  walletServer: z.string(),
-  rpcUrl: z.string(),
-});
-
 export type RemoteConfig = z.infer<typeof remoteConfigSchema>;
 export type LeafList = z.infer<typeof leavesSchema>;
 export type ReserveBooks = z.infer<typeof reserveSchema>;

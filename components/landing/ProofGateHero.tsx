@@ -6,7 +6,7 @@ import { ProofLog } from "@/components/ProofLog";
 import { SceneFrame } from "@/components/fx/proof-gate/SceneFrame";
 import { Surface } from "@/components/ui/Surface";
 
-const ROUTES = ["ai/chat", "search", "health/lookup", "rpc/ethereum", "inbox"];
+const ROUTES = ["ai/chat", "search", "health/lookup", "inbox"];
 // Height of the glass panel; the gate and lanes stay above it while requests pass behind it.
 const PANEL = 236;
 
@@ -43,7 +43,7 @@ export function ProofGateHero() {
     <div ref={setSource} className="relative h-[480px] sm:h-[540px] lg:-mr-8">
       <div
         role="img"
-        aria-label="Coloured requests pass through a gold proof gate and leave as identical white requests for five services. None are linked to a person."
+        aria-label="Coloured requests pass through a gold proof gate and leave as identical white requests for four services. None are linked to a person."
         className="absolute inset-0"
       >
         <SceneFrame source={source} reserveBottom={PANEL} onCross={onCross} />
