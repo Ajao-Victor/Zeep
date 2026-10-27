@@ -71,6 +71,7 @@ export default function HomePage() {
               key={service.id}
               name={service.name}
               summary={service.summary}
+              href={`/get?next=${encodeURIComponent(service.href)}`}
               cost="Priced in credits"
               className="last:sm:col-span-2 last:lg:col-span-1"
             />
