@@ -76,6 +76,12 @@ export default function HomePage() {
             />
           ))}
         </div>
+        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Link href="/get" className="inline-flex items-center rounded-lg bg-gold px-[18px] py-3 text-[15px] font-medium text-on-gold transition-[background-color,transform] duration-150 hover:bg-gold-hover motion-safe:hover:-translate-y-px">
+            Open a balance
+          </Link>
+          <p className="text-[14px] text-muted">One deposit pays for all five.</p>
+        </div>
       </section>
 
       <Faq />
