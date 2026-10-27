@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/lib/config";
+import { serviceAt } from "@/lib/catalog";
 import { errorText } from "@/lib/format";
 import { useVaultDoor } from "@/lib/fx/useVaultDoor";
 import { createPhrase, quizIndexes } from "@/lib/vault/phrase";
@@ -28,6 +29,10 @@ export function GetFlow() {
   const { view } = useVault();
   const router = useRouter();
   const [step, setStep] = useState<Step>("Welcome");
+  // A landing service card opens /get?next=<service>: once the balance exists, go there instead of
+  // /services. Only the five service routes are accepted. Read after mount (the page is static).
+  const [next, setNext] = useState<ReturnType<typeof serviceAt>>(null);
+  useEffect(() => setNext(serviceAt(new URLSearchParams(window.location.search).get("next"))), []);
   const [pin, setPin] = useState("");
   const [again, setAgain] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -220,7 +225,7 @@ export function GetFlow() {
           <h2 className="text-[17px] font-medium">Deposit any amount</h2>
           <p className="mt-2 text-[14px] text-muted">Whatever arrives is credited, even if it differs from what you type. You can skip this and deposit later.</p>
           <div className="mt-5">
-            <DepositPanel onDone={() => router.push("/services")} />
+            <DepositPanel onDone={() => router.push(next?.href ?? "/services")} />
           </div>
         </Panel>
       ) : null}
