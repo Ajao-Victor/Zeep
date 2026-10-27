@@ -17,7 +17,8 @@ const BackdropScene = dynamic(() => import("@/components/fx/home-backdrop/Backdr
  * - tier 1: the same in CSS, slowly moving (transform and opacity only);
  * - tiers 2 and 3: a WebGL field of requests flowing toward the viewer over a gold grid floor,
  *   with drifting lattices, fetched once the page has loaded and the browser is idle. It steps
- *   down to CSS when the frame rate sags or the context is lost, and pauses in a hidden tab.
+ *   down to CSS when the frame rate sags, or when a lost context doesn't come back within a few
+ *   seconds, and pauses in a hidden tab.
  * Tier 0 also marks <html data-home-still> so the page's floating cards hold still.
  */
 export function HomeBackdrop() {

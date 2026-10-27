@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { watchContextLoss } from "@/lib/fx/context";
 import { createFpsSampler } from "@/lib/fx/fps";
 import { Warmup } from "@/components/fx/Warmup";
 import { Bokeh } from "@/components/fx/proof-gate/Bokeh";
@@ -144,6 +145,8 @@ export default function Scene3D({ layout, tier, active, source, onCross, onFps, 
     setWarm(true);
     onReady();
   }, [onReady]);
+  const stopWatching = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopWatching.current?.(), []);
   return (
     <div aria-hidden="true" style={{ width: layout.width, height: layout.height }}>
       <Canvas
@@ -153,14 +156,8 @@ export default function Scene3D({ layout, tier, active, source, onCross, onFps, 
         gl={{ antialias: tier === 3, alpha: true, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x000000, 0);
-          gl.domElement.addEventListener(
-            "webglcontextlost",
-            (event) => {
-              event.preventDefault();
-              onLost();
-            },
-            { once: true },
-          );
+          // A lost context gets a few seconds to come back before the scene falls back.
+          stopWatching.current = watchContextLoss(gl.domElement, onLost);
         }}
       >
         <ambientLight intensity={0.3} />

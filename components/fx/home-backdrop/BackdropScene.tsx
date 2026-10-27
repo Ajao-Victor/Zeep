@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANON, GOLD, IDENTITY } from "@/components/fx/proof-gate/layout";
+import { watchContextLoss } from "@/lib/fx/context";
 import { createFpsSampler } from "@/lib/fx/fps";
 import { Warmup } from "@/components/fx/Warmup";
 
@@ -298,6 +299,8 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
 export default function BackdropScene({ tier, active, onFps, onLost, onReady }: Props) {
   const [warm, setWarm] = useState(false);
   const onWarm = useCallback(() => setWarm(true), []);
+  const stopWatching = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopWatching.current?.(), []);
   return (
     <Canvas
       aria-hidden="true"
@@ -308,14 +311,8 @@ export default function BackdropScene({ tier, active, onFps, onLost, onReady }: 
       style={{ position: "absolute", inset: 0 }}
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0);
-        gl.domElement.addEventListener(
-          "webglcontextlost",
-          (event) => {
-            event.preventDefault();
-            onLost();
-          },
-          { once: true },
-        );
+        // A lost context gets a few seconds to come back before the scene falls back.
+        stopWatching.current = watchContextLoss(gl.domElement, onLost);
       }}
     >
       <World tier={tier} onFps={onFps} onReady={onReady} />
