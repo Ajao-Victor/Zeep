@@ -50,6 +50,7 @@ Your balance is shown as **credits** (1 credit = $1): the dollar notes plus the 
 Motion is kept for three moments, and each one reacts only to real cryptographic events, never to timers.
 
 - **The Proof Gate** (landing page). A live three.js scene: requests arrive in six identity colours, pass through a rotating gold lattice (the proof) and leave as anonymous white points along four lanes to the services. The scene picks a quality tier per device: WebGL ultra or standard, a 2D canvas, or a still SVG poster. It drops a tier when the frame rate sags and pauses when off screen.
+- **The floating landing page.** The home page floats in glass over a full-page 3D backdrop: a WebGL field of requests flowing toward the viewer over a gold grid floor, with drifting lattices (a CSS version on lighter devices, still under reduced motion). Cards bob, rise in on scroll and tilt toward the pointer.
 - **The Forge** (every paid button). The button becomes a small gold forge driven by the real proof: preparing → proving → sending → settled, or failed.
 - **The Vault Door** (create, unlock, lock, network switch). A CSS 3D door whose rings turn exactly while Argon2id derives the key. It then opens, seals, jolts on a wrong PIN, or swings shut on lock.
 

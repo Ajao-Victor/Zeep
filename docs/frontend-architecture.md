@@ -158,11 +158,25 @@ Each moment uses the lightest technology that can carry it. Only the landing pag
 
 **Lifecycle**
 
-- `Scene3D` is a `next/dynamic` import with `ssr: false`, requested after `requestIdleCallback` and only for tiers 2 and 3. The poster shows until the first WebGL frame. The landing page's first-load JS stays at about 114 kB, and the 3D chunks are about 245 kB gzipped (budget 250 kB).
+- `Scene3D` is a `next/dynamic` import with `ssr: false`, requested after `requestIdleCallback` and only for tiers 2 and 3. The poster shows until the first WebGL frame. The landing page's first-load JS stays at about 114 kB, and the 3D chunks are about 249.5 kB gzipped with the landing backdrop (budget 250 kB).
 - The scene renders only while it is on screen and the tab is visible (`IntersectionObserver` and `visibilitychange` set R3F's `frameloop` to `"never"`).
 - Sustained frame rate is sampled in 2 s windows. Below 50 fps tier 3 steps down to 2, and below 30 fps tier 2 steps down to 1 (one-way). A lost WebGL context falls back to the poster.
 - **Unmount.** Leaving the page unmounts the R3F root, which disposes the scene graph and the renderer and calls `forceContextLoss()`. Our components also dispose their own buffer geometries and the generated PMREM environment, and remove their pointer listeners and observers. Audited in headless Chrome: after 20 landing round trips (more than Chrome's 16 live-context limit) there were no context warnings, one canvas and one context left reachable (the same as after 3 trips), no three.js renderers, and window and document listener counts back at their baseline.
 - **Shader rules learned the hard way.** Every custom fragment shader ends with `#include <colorspace_fragment>`. `smoothstep` edges must be ascending (a reversed call draws nothing on ANGLE/Metal). R3F copies a `uniforms` prop into the material, so per-frame updates go through the material ref, not the object passed in.
+
+### The landing backdrop and floating sections (three.js and CSS)
+
+The whole landing page floats over a fixed backdrop. `components/fx/home-backdrop/HomeBackdrop.tsx` sits first inside the landing `<main>`, which is `isolate`, so the backdrop (`-z-10`) stacks above the opaque body background and below every section. `SiteFooter` is `relative z-10` so it stays on top. Styles live in `styles/home.css`.
+
+| Tier | Backdrop |
+| --- | --- |
+| 0 | Still aurora glows, a still CSS grid and the vignette; also sets `<html data-home-still>` so the cards hold still |
+| 1 | The same, with the aurora drifting and the CSS grid floor running toward the viewer (transform only) |
+| 2, 3 | `BackdropScene.tsx` (WebGL, after `whenIdle`): 2,600 or 7,000 points flowing toward the viewer, turning from identity colours to gold to anonymous white with depth, over an endless gold grid floor, with gold and white wireframe lattices passing in the outer bands of the screen only (projected each frame, so they never cross the text). Scrolling flies forward and the pointer tilts the camera. Pixel ratio 0.75–1 or 1–1.5 |
+
+The backdrop reuses `chooseTier`, `stepDown` (drops to tier 1 when the frame rate sags), falls back to tier 1 on context loss, and pauses in a hidden tab. It shares the three.js chunk with the Proof Gate and adds 2.7 kB gzipped. Audited: 20 landing round trips leave 2 canvases and no WebGL context warnings, and app routes never load it.
+
+Over it, the How it works steps, the four service cards and the FAQ are glass (`glass-1`, the lit edge, elevation). Cards bob slowly with offset timing (`.home-float`). Headings and cards rise in on first scroll (`components/landing/Reveal.tsx`; content already on screen, or without JavaScript, is never hidden). Service cards tilt toward a mouse pointer with a gold spotlight (`components/landing/TiltLink.tsx`, CSS variables, no re-render; flat at rest). A turning dashed halo sits behind the services. The landing page never runs a proof or a key derivation, so its loops run smoothly rather than in 100 ms steps. Reduced motion and FX off hold everything still.
 
 ### The Forge (paid buttons, CSS ratchet)
 
@@ -357,7 +371,7 @@ These rules came out of measurements during the redesign. Treat them as acceptan
 ### Thread safety: never slow the cryptography
 
 1. **Crypto lives in workers.** Groth16 proofs (`workers/spend.worker.ts`), Argon2id (`workers/kdf.worker.ts`) and the Zcash wallet (`workers/wallet.worker.ts`) never run on the main thread. Don't move them, and don't add main-thread work that competes with them during a proof or a derivation.
-2. **No WebGL, canvas animation or `requestAnimationFrame` loop on app routes.** WebGL is allowed only on marketing pages, behind `SceneFrame`: lazily imported, tiered, paused off-screen. `/get`, `/unlock`, `/restore` and every `(app)` route animate with CSS only.
+2. **No WebGL, canvas animation or `requestAnimationFrame` loop on app routes.** WebGL is allowed only on marketing pages, behind `SceneFrame` or `HomeBackdrop`: lazily imported, tiered, paused off-screen or in a hidden tab, and stepping down when the frame rate sags. `/get`, `/unlock`, `/restore` and every `(app)` route animate with CSS only.
 3. **Animate only `transform` and `opacity`.** Masks, gradients, filters and shadows are fine when painted once and left alone. Never animate them, or colour, in a loop.
 4. **Loops that can run during a proof or a derivation tick in steps, at most 10 changes a second** (`steps(n)` over n × 100 ms, with every element on the same 100 ms beat). A composited animation is not free: a smooth 60 fps loop made the compositor and GPU process take enough CPU to slow proofs by about 18%.
 5. **Drive motion from real events.** Use `onProof` (`lib/zeep/prove.ts`), `onKdf` (`lib/vault/kdf.ts`) and the call's own promise. Timers may only hold an outcome on screen, and are skipped under reduced motion. Never show progress or success that has not happened.
