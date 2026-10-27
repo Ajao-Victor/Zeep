@@ -6,7 +6,8 @@ import { Faq } from "@/components/landing/Faq";
 import { ProofGateHero } from "@/components/landing/ProofGateHero";
 import { HomeBackdrop } from "@/components/fx/home-backdrop/HomeBackdrop";
 import { Reveal } from "@/components/landing/Reveal";
-import { ServiceCard } from "@/components/ServiceCard";
+import { ServiceIcon } from "@/components/landing/ServiceIcon";
+import { TiltLink } from "@/components/landing/TiltLink";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
 
@@ -70,30 +71,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="services" className="border-t border-line py-16">
-        <p className="text-[13px] text-muted">Services</p>
-        <h2 className="mt-2.5 max-w-xl text-[32px] font-semibold tracking-[-0.025em]">Four services, one private balance.</h2>
-        <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-muted">
-          Each request is paid from your dollar balance with its own zero-knowledge proof. The service sees what you asked, not who asked it.
-        </p>
-        <div className="mt-9 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {SERVICES.map((service) => (
-            <ServiceCard
-              key={service.id}
-              name={service.name}
-              summary={service.summary}
-              href={`/get?next=${encodeURIComponent(service.href)}`}
-              cost="Priced in credits"
-              className="last:sm:col-span-2 last:lg:col-span-1"
-            />
+      <section id="services" className="relative border-t border-line py-20">
+        <div className="home-halo" aria-hidden="true" />
+        <Reveal className="relative">
+          <p className="text-[13px] text-muted">Services</p>
+          <h2 className="mt-2.5 max-w-2xl text-[32px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[40px]">
+            Four services,{" "}
+            <span className="bg-linear-to-r from-gold via-gold-hover to-anon bg-clip-text text-transparent">one private balance.</span>
+          </h2>
+          <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-muted">
+            Each request is paid from your dollar balance with its own zero-knowledge proof. The service sees what you asked, not who asked it.
+          </p>
+        </Reveal>
+        <div className="relative mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {SERVICES.map((service, index) => (
+            <Reveal key={service.id} delay={index * 110} className="h-full">
+              <div className="home-float h-full" style={{ "--float-delay": `${-index * 1.8}s` } as CSSProperties}>
+                <TiltLink
+                  href={`/get?next=${encodeURIComponent(service.href)}`}
+                  className="glass-1 glass-edge relative flex h-full min-h-[264px] flex-col rounded-2xl border border-line p-6 shadow-elev-2"
+                >
+                  <span className="grid h-12 w-12 place-items-center rounded-xl border border-gold/30 bg-gold/10 text-gold">
+                    <ServiceIcon id={service.id} />
+                  </span>
+                  <h3 className="mt-6 text-[18px] font-medium tracking-[-0.01em]">{service.name}</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed text-muted">{service.summary}</p>
+                  <span className="mt-auto flex items-center justify-between gap-3 pt-6">
+                    <span className="font-mono text-[12px] text-gold">Priced in credits</span>
+                    <span className="home-arrow inline-flex items-center gap-1.5 text-[13px] font-medium text-text">
+                      Open
+                      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 7h8M7.5 3.5 11 7l-3.5 3.5" />
+                      </svg>
+                    </span>
+                  </span>
+                </TiltLink>
+              </div>
+            </Reveal>
           ))}
         </div>
-        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <Link href="/get" className="inline-flex items-center rounded-lg bg-gold px-[18px] py-3 text-[15px] font-medium text-on-gold transition-[background-color,transform] duration-150 hover:bg-gold-hover motion-safe:hover:-translate-y-px">
-            Open a balance
-          </Link>
-          <p className="text-[14px] text-muted">One deposit pays for all four.</p>
-        </div>
+        <Reveal delay={200} className="relative mt-10">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <Link href="/get" className="inline-flex items-center rounded-lg bg-gold px-[18px] py-3 text-[15px] font-medium text-on-gold transition-[background-color,transform] duration-150 hover:bg-gold-hover motion-safe:hover:-translate-y-px">
+              Open a balance
+            </Link>
+            <p className="text-[14px] text-muted">One deposit pays for all four.</p>
+          </div>
+        </Reveal>
       </section>
 
       <Faq />
