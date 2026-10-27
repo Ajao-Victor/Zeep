@@ -73,7 +73,8 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
   const aim = useRef({ x: 0, y: 0 });
   const energy = useRef(0.35);
   const pulse = useRef(0);
-  const sample = useMemo(() => createFpsSampler(onFps), [onFps]);
+  // A new sampler per tier, so tier 2 after a step-down gets a fresh warm-up and two fresh windows.
+  const sample = useMemo(() => createFpsSampler(onFps), [onFps, tier]);
 
   useEffect(() => {
     if (!source) return;

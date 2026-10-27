@@ -256,7 +256,8 @@ function World({ quality, onFps, onReady }: Pick<Props, "onFps" | "onReady"> & {
   const scroll = useRef(0);
   const travel = useRef(0);
   const started = useRef(false);
-  const sample = useMemo(() => createFpsSampler(onFps), [onFps]);
+  // A new sampler per quality level, so a lighter level gets a fresh warm-up and two fresh windows.
+  const sample = useMemo(() => createFpsSampler(onFps), [onFps, quality]);
 
   useEffect(() => {
     const move = (event: PointerEvent) => {
