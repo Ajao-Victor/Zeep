@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { apiBase, type Network } from "@/lib/config";
 import {
-  chainInfoSchema,
   healthSchema,
   leavesSchema,
   refundResultSchema,
@@ -93,17 +92,6 @@ export function api(network: Network) {
     },
     reserve(): Promise<ReserveBooks> {
       return request(network, "/v1/reserve").then((response) => parse(response, reserveSchema));
-    },
-    chain() {
-      return request(network, "/v1/chain").then((response) => parse(response, chainInfoSchema));
-    },
-    async chainCall(proof: string) {
-      const response = await request(network, "/v1/chain/call", {
-        method: "POST",
-        body: { method: "getinfo" },
-        proof,
-      });
-      if (!response.ok) await parse(response, z.object({}).passthrough());
     },
     search(body: { query: string }, proof: string): Promise<SearchResults> {
       return request(network, "/v1/search", { method: "POST", body, proof }).then((response) =>
