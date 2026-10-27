@@ -5,6 +5,7 @@ import { chatCostMicro } from "@/lib/zeep/client";
 import { estimateDeposit, formatCredits, formatZec, parseZec, zatsToMicroUsd, bpsOf } from "@/lib/zeep/units";
 import { ACTIVITY_MS, recentActivity, spendTitle, type Activity } from "@/lib/account/activity";
 import { quizIndexes } from "@/lib/vault/phrase";
+import { serviceAt } from "@/lib/catalog";
 
 describe("units", () => {
   it("shows credits as dollars, with ZEC kept separate", () => {
@@ -110,5 +111,15 @@ describe("zcash", () => {
     expect(uri.startsWith("zcash:zs1exampleaddress?")).toBe(true);
     expect(uri).toContain("amount=0.1");
     expect(uri).not.toContain("memo=");
+  });
+});
+
+describe("catalog", () => {
+  it("trusts only the five service routes as a next page", () => {
+    expect(serviceAt("/ai")?.id).toBe("ai");
+    expect(serviceAt("/inbox")?.name).toBe("Anonymous inbox");
+    for (const path of [null, "", "/", "/wallet", "/services", "//evil.example/ai", "https://evil.example/ai", "/ai?x=1", "/AI"]) {
+      expect(serviceAt(path)).toBeNull();
+    }
   });
 });
