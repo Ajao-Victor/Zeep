@@ -71,7 +71,7 @@ Fifteen routes. Public pages work without a pass. Anything that spends or withdr
 
 | Route | Screen | Needs unlocked pass |
 | --- | --- | --- |
-| `/` | Landing: hero with the Proof Gate, How it works (`#how`, three steps), Services (`#services`, five cards and Open a balance), FAQ (`#faq`) | No |
+| `/` | Landing: hero with the Proof Gate, How it works (`#how`, three steps), Services (`#services`: five cards, each opening `/get?next=<service>`, and Open a balance), FAQ (`#faq`) | No |
 | `/privacy` | How it stays private | No |
 | `/get` | Open a balance: 24-word phrase, word check, 6-digit PIN, optional fingerprint, optional deposit | Creates one |
 | `/unlock` | PIN pad or fingerprint; link to restore | No |
@@ -91,7 +91,9 @@ The header credit link goes to `/credits`. Below 400 px the "Open a balance" but
 
 **Header by account state.** Without an account on the device, the header shows Services (`#services`, the five service cards), How it works (`#how`, the three steps), FAQ (`#faq`) and "Open a balance" (`/get`). Wallet is not listed: it needs a balance. Once a vault exists, those landing-page links are hidden and the logo goes to `/services`. A locked vault gets an Unlock button (not on `/unlock` itself), and an unlocked one gets the credits, Lock and Sign out, plus the in-app nav.
 
-**The landing page is for devices without an account.** `components/landing/SignedInRedirect.tsx`, mounted by `Providers` on `/` so the landing bundle stays at about 114 kB, sends an unlocked balance to `/services` and a locked one to `/unlock?next=/services`. On a full page load, an inline `<head>` script (`lib/account/hint.ts`) does the same before first paint, using a one-bit localStorage hint, so a returning device never sees the landing page flash. The app-route guard sends a device with no vault to `/`. Signing out deletes the vault and returns to `/`, which is the only way back to the landing page. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
+**The landing page is for devices without an account.** `components/landing/SignedInRedirect.tsx`, mounted by `Providers` on `/` so the landing bundle stays at about 114 kB, sends an unlocked balance to `/services` and a locked one to `/unlock?next=/services`. On a full page load, an inline `<head>` script (`lib/account/hint.ts`) does the same before first paint, using a one-bit localStorage hint, so a returning device never sees the landing page flash. The app-route guard sends a device with no vault to `/`. Signing out deletes the vault and returns to `/`, which is the only way back to the landing page.
+
+**Service cards lead to their service.** A landing service card opens `/get?next=/ai` (or `/search`, `/health`, `/chain`, `/inbox`). The landing page is only for devices without a balance, and the service pages need one. The Welcome step says "After this, you'll go to <service>.", "Sign in with 24 words" carries `next` to `/restore`, and both flows finish on that service instead of `/services`. `serviceAt()` in `lib/catalog.ts` accepts only the five service routes, so a crafted `next` falls back to `/services`. The app nav is a horizontal scroller under the header, and a full-height menu on small screens.
 
 ## Design system
 
