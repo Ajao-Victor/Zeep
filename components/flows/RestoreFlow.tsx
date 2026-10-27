@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/lib/config";
+import { serviceAt } from "@/lib/catalog";
 import { errorText } from "@/lib/format";
 import { formatUsd, formatZec, seedFromPhrase } from "@/lib/zeep";
 import { wordCount } from "@/lib/vault/phrase";
@@ -24,6 +25,9 @@ export function RestoreFlow() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
+  // Carried from a landing service card through /get: finish on that service (see serviceAt).
+  const [next, setNext] = useState<ReturnType<typeof serviceAt>>(null);
+  useEffect(() => setNext(serviceAt(new URLSearchParams(window.location.search).get("next"))), []);
 
   function fillWords(start: number, value: string) {
     const parts = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -96,7 +100,7 @@ export function RestoreFlow() {
         <Panel>
           <p className="text-[15px] leading-relaxed">{result}</p>
           <div className="mt-5">
-            <Button onClick={() => router.push("/services")}>Continue</Button>
+            <Button onClick={() => router.push(next?.href ?? "/services")}>Continue</Button>
           </div>
         </Panel>
       ) : (
