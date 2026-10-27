@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useVault } from "@/components/Providers";
+import { useVault } from "@/components/VaultState";
 
 /**
- * The landing page is for people without an account on this device. Once a vault exists, the
- * home page sends them into the app: an unlocked balance to /services, a locked one straight to
- * /unlock with /services as the next page (one navigation, so the Vault Door mounts once). Only
- * signing out, which deletes the vault, brings the landing page back. Empty and wiped devices stay.
+ * The landing page is for people without an account on this device. Providers mounts this on /
+ * (from the layout, so the landing page's bundle stays as it was). Once a vault exists, it sends
+ * them into the app: an unlocked balance to /services, a locked one straight to /unlock with
+ * /services as the next page (one navigation, so the Vault Door mounts once). Only signing out,
+ * which deletes the vault, brings the landing page back. Empty and wiped devices stay.
  */
 export function SignedInRedirect() {
   const { view } = useVault();

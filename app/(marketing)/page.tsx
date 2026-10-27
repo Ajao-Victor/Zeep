@@ -4,14 +4,12 @@ import { SERVICES } from "@/lib/catalog";
 import { Faq } from "@/components/landing/Faq";
 import { ProofGateHero } from "@/components/landing/ProofGateHero";
 import { ServiceCard } from "@/components/ServiceCard";
-import { SignedInRedirect } from "@/components/landing/SignedInRedirect";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
 
 export default function HomePage() {
   return (
     <main className="mx-auto max-w-[1200px] px-4 sm:px-8">
-      <SignedInRedirect />
       <section className="grid items-center gap-10 py-12 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:py-20">
         <div>
           <div className="flex items-center gap-2 text-[13px] text-muted">
