@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { Warmup } from "@/components/fx/Warmup";
 import { Bokeh } from "@/components/fx/proof-gate/Bokeh";
 import { Gate } from "@/components/fx/proof-gate/Gate";
 import { Lanes } from "@/components/fx/proof-gate/Lanes";
@@ -150,11 +151,17 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
 
 /** Tiers 2 and 3: the WebGL Proof Gate. Loaded on demand; never imported by app routes. */
 export default function Scene3D({ layout, tier, active, source, onCross, onFps, onLost, onReady }: Props) {
+  // Shaders compile in parallel before the first frame (Warmup); the poster stays until then.
+  const [warm, setWarm] = useState(false);
+  const onWarm = useCallback(() => {
+    setWarm(true);
+    onReady();
+  }, [onReady]);
   return (
     <div aria-hidden="true" style={{ width: layout.width, height: layout.height }}>
       <Canvas
         dpr={QUALITY[tier].dpr}
-        frameloop={active ? "always" : "never"}
+        frameloop={active && warm ? "always" : "never"}
         camera={{ position: [0, 0, 10], fov: 35, near: 0.1, far: 50 }}
         gl={{ antialias: tier === 3, alpha: true, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
@@ -167,13 +174,13 @@ export default function Scene3D({ layout, tier, active, source, onCross, onFps, 
             },
             { once: true },
           );
-          onReady();
         }}
       >
         <ambientLight intensity={0.3} />
         <directionalLight position={[4, 5, 8]} intensity={1.2} />
         <Environment />
         <World layout={layout} tier={tier} source={source} onCross={onCross} onFps={onFps} />
+        <Warmup onWarm={onWarm} />
       </Canvas>
     </div>
   );
