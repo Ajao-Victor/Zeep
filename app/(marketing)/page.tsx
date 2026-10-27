@@ -57,6 +57,14 @@ export default function HomePage() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section id="services" className="border-t border-line py-16">
+        <p className="text-[13px] text-muted">Services</p>
+        <h2 className="mt-2.5 max-w-xl text-[32px] font-semibold tracking-[-0.025em]">Five services, one private balance.</h2>
+        <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-muted">
+          Each request is paid from your dollar balance with its own zero-knowledge proof. The service sees what you asked, not who asked it.
+        </p>
         <div className="mt-9 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {SERVICES.map((service) => (
             <ServiceCard
@@ -67,6 +75,12 @@ export default function HomePage() {
               className="last:sm:col-span-2 last:lg:col-span-1"
             />
           ))}
+        </div>
+        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Link href="/get" className="inline-flex items-center rounded-lg bg-gold px-[18px] py-3 text-[15px] font-medium text-on-gold transition-[background-color,transform] duration-150 hover:bg-gold-hover motion-safe:hover:-translate-y-px">
+            Open a balance
+          </Link>
+          <p className="text-[14px] text-muted">One deposit pays for all five.</p>
         </div>
       </section>
 
