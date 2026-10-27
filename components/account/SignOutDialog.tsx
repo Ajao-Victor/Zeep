@@ -45,7 +45,7 @@ export function SignOutDialog({ open, onOpenChange }: { open: boolean; onOpenCha
     try {
       await signOut(session.network);
       onOpenChange(false);
-      router.push("/get");
+      router.push("/");
     } finally {
       setBusy(false);
     }
