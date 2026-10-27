@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 export function SiteFooter() {
   const sha = config.commitSha === "dev" ? "dev" : config.commitSha.slice(0, 7);
   return (
-    <footer className="mt-auto border-t border-line py-7 text-[13px] text-faint">
+    <footer className="relative z-10 mt-auto border-t border-line py-7 text-[13px] text-faint">
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 sm:px-8">
         <span>Zeep · a shielded balance</span>
         <span className="flex flex-wrap items-center gap-x-2">
