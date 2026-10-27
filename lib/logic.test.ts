@@ -86,7 +86,9 @@ describe("activity", () => {
   it("names a payment from its route", () => {
     expect(spendTitle("/v1/ai/chat/completions")).toBe("AI");
     expect(spendTitle("/v1/research")).toBe("Research");
-    expect(spendTitle("/v1/rpc/ethereum")).toBe("Chain");
+    expect(spendTitle("/v1/health/lookup")).toBe("Health");
+    // Retired routes (Blockchain access) fall back to the generic title.
+    expect(spendTitle("/v1/rpc/ethereum")).toBe("Payment");
   });
 });
 
