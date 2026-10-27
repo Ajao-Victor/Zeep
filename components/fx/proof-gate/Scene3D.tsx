@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { createFpsSampler } from "@/lib/fx/fps";
 import { Warmup } from "@/components/fx/Warmup";
 import { Bokeh } from "@/components/fx/proof-gate/Bokeh";
 import { Gate } from "@/components/fx/proof-gate/Gate";
@@ -71,7 +72,7 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
   const aim = useRef({ x: 0, y: 0 });
   const energy = useRef(0.35);
   const pulse = useRef(0);
-  const perf = useRef({ frames: 0, time: 0, warm: 0 });
+  const sample = useMemo(() => createFpsSampler(onFps), [onFps]);
 
   useEffect(() => {
     if (!source) return;
@@ -120,22 +121,8 @@ function World({ layout, tier, source, onCross, onFps }: Omit<Props, "active" | 
     camera.position.y += (-aim.current.y * 0.25 - camera.position.y) * 0.05;
     camera.lookAt(0, 0, 0);
 
-    // Report the sustained frame rate in 2 s windows after a 1.5 s warm-up. Pauses restart the window.
-    const sample = perf.current;
-    if (delta > 0.5) {
-      sample.frames = 0;
-      sample.time = 0;
-      return;
-    }
-    sample.warm += delta;
-    if (sample.warm < 1.5) return;
-    sample.frames += 1;
-    sample.time += delta;
-    if (sample.time >= 2) {
-      onFps(sample.frames / sample.time);
-      sample.frames = 0;
-      sample.time = 0;
-    }
+    // Sustained frame rate for the tier step-down (lib/fx/fps.ts).
+    sample(delta);
   });
 
   const quality = QUALITY[tier];

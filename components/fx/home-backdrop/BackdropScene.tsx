@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANON, GOLD, IDENTITY } from "@/components/fx/proof-gate/layout";
+import { createFpsSampler } from "@/lib/fx/fps";
 import { Warmup } from "@/components/fx/Warmup";
 
 // Depth of the field in world units. Everything flows toward the camera and wraps at this depth.
@@ -248,7 +249,8 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
   const aim = useRef({ x: 0, y: 0 });
   const scroll = useRef(0);
   const travel = useRef(0);
-  const perf = useRef({ frames: 0, time: 0, warm: 0, ready: false });
+  const started = useRef(false);
+  const sample = useMemo(() => createFpsSampler(onFps), [onFps]);
 
   useEffect(() => {
     const move = (event: PointerEvent) => {
@@ -274,26 +276,12 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
     camera.position.y += (-aim.current.y * 0.9 - camera.position.y) * 0.04;
     camera.lookAt(0, -1, -40);
 
-    const sample = perf.current;
-    if (!sample.ready) {
-      sample.ready = true;
+    if (!started.current) {
+      started.current = true;
       onReady();
     }
-    // Sustained frame rate in 2 s windows after a 1.5 s warm-up, as in the Proof Gate.
-    if (delta > 0.5) {
-      sample.frames = 0;
-      sample.time = 0;
-      return;
-    }
-    sample.warm += delta;
-    if (sample.warm < 1.5) return;
-    sample.frames += 1;
-    sample.time += delta;
-    if (sample.time >= 2) {
-      onFps(sample.frames / sample.time);
-      sample.frames = 0;
-      sample.time = 0;
-    }
+    // Sustained frame rate for the tier step-down (lib/fx/fps.ts).
+    sample(delta);
   });
 
   const quality = QUALITY[tier];
