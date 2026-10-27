@@ -136,8 +136,9 @@ export function GetFlow() {
         <Panel>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => { setPhrase(createPhrase()); setStep("Phrase"); }}>Create a new account</Button>
-            <Button href="/restore" variant="secondary">Sign in with 24 words</Button>
+            <Button href={next ? `/restore?next=${encodeURIComponent(next.href)}` : "/restore"} variant="secondary">Sign in with 24 words</Button>
           </div>
+          {next ? <p className="mt-4 text-[13px] text-muted">After this, you&apos;ll go to {next.name}.</p> : null}
         </Panel>
       ) : (
       <>
