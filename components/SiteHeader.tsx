@@ -215,6 +215,12 @@ export function SiteHeader() {
               Sign out
             </Button>
           </div>
+        ) : signedIn ? (
+          pathname === "/unlock" ? null : (
+            <Button href={`/unlock?next=${encodeURIComponent("/services")}`} size="sm" className="shrink-0 whitespace-nowrap leading-none">
+              Unlock
+            </Button>
+          )
         ) : (
           <Button href="/get" size="sm" className="shrink-0 whitespace-nowrap leading-none">
             <span className="max-[399px]:hidden">Open a balance</span>
