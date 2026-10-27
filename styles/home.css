@@ -16,11 +16,12 @@
   background: radial-gradient(120% 90% at 50% 0%, #15140f 0%, var(--bg) 45%, var(--void) 100%);
 }
 
-/* Aurora: three large soft lights that give the glass something to blur. */
+/* Aurora: three large soft lights that give the glass something to blur. The radial gradients
+   fade to transparent on their own; a blur filter on elements this large made the first paint
+   noticeably slower for no visible gain. */
 .home-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(70px);
   opacity: 0.55;
   will-change: transform;
 }
@@ -30,7 +31,7 @@
   right: -8%;
   width: 46vmax;
   height: 46vmax;
-  background: radial-gradient(circle, rgb(217 164 65 / 0.32), transparent 65%);
+  background: radial-gradient(circle, rgb(217 164 65 / 0.3), rgb(217 164 65 / 0.12) 35%, transparent 70%);
   animation: home-drift-a 38s ease-in-out infinite alternate;
 }
 
@@ -39,7 +40,7 @@
   left: -14%;
   width: 40vmax;
   height: 40vmax;
-  background: radial-gradient(circle, rgb(127 167 201 / 0.2), rgb(181 138 201 / 0.12) 40%, transparent 68%);
+  background: radial-gradient(circle, rgb(127 167 201 / 0.18), rgb(181 138 201 / 0.1) 40%, transparent 70%);
   animation: home-drift-b 46s ease-in-out infinite alternate;
 }
 
@@ -48,7 +49,7 @@
   right: 18%;
   width: 36vmax;
   height: 36vmax;
-  background: radial-gradient(circle, rgb(244 242 238 / 0.1), transparent 62%);
+  background: radial-gradient(circle, rgb(244 242 238 / 0.09), rgb(244 242 238 / 0.03) 40%, transparent 70%);
   animation: home-drift-c 52s ease-in-out infinite alternate;
 }
 

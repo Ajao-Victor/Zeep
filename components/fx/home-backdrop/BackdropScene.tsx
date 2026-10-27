@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANON, GOLD, IDENTITY } from "@/components/fx/proof-gate/layout";
+import { Warmup } from "@/components/fx/Warmup";
 
 // Depth of the field in world units. Everything flows toward the camera and wraps at this depth.
 const DEPTH = 140;
@@ -307,11 +308,13 @@ function World({ tier, onFps, onReady }: Pick<Props, "tier" | "onFps" | "onReady
 
 /** Tiers 2 and 3: the landing page's WebGL backdrop. Loaded on demand; never imported by app routes. */
 export default function BackdropScene({ tier, active, onFps, onLost, onReady }: Props) {
+  const [warm, setWarm] = useState(false);
+  const onWarm = useCallback(() => setWarm(true), []);
   return (
     <Canvas
       aria-hidden="true"
       dpr={QUALITY[tier].dpr}
-      frameloop={active ? "always" : "never"}
+      frameloop={active && warm ? "always" : "never"}
       camera={{ position: [0, 0, 0], fov: 60, near: 0.1, far: DEPTH + 20 }}
       gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0 }}
@@ -328,6 +331,7 @@ export default function BackdropScene({ tier, active, onFps, onLost, onReady }: 
       }}
     >
       <World tier={tier} onFps={onFps} onReady={onReady} />
+      <Warmup onWarm={onWarm} />
     </Canvas>
   );
 }

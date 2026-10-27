@@ -66,7 +66,12 @@ export function SiteHeader() {
   }, [pathname]);
 
   useEffect(() => {
+    // The landing page always opens at the top on a load or refresh (lib/fx/landingScroll.ts sets
+    // "manual" there); other pages keep the browser's usual scroll restoration.
+    window.history.scrollRestoration = pathname === "/" ? "manual" : "auto";
     if (pathname !== "/") return;
+    // Only an in-app section link (e.g. Services from /privacy) arrives here with a hash: a hard
+    // load has already had it removed, so it stays at the top.
     const id = window.location.hash.replace(/^#/, "");
     if (!id) return;
     const timer = window.setTimeout(() => scrollToSection(`/#${id}`), 50);

@@ -7,6 +7,8 @@ import { whenIdle } from "@/lib/fx/idle";
 import { chooseTier, readSignals, stepDown, type Tier } from "@/lib/fx/tier";
 
 // The WebGL backdrop shares the three.js chunk with the Proof Gate and loads only on tiers 2 and 3.
+// Pause after the load event before fetching it, so it never competes with the hero.
+const BACKDROP_DELAY_MS = 1200;
 const BackdropScene = dynamic(() => import("@/components/fx/home-backdrop/BackdropScene"), { ssr: false });
 
 /**
@@ -14,8 +16,8 @@ const BackdropScene = dynamic(() => import("@/components/fx/home-backdrop/Backdr
  * - tier 0 (reduced motion, data saver, FX off): still aurora glows and grid;
  * - tier 1: the same in CSS, slowly moving (transform and opacity only);
  * - tiers 2 and 3: a WebGL field of requests flowing toward the viewer over a gold grid floor,
- *   with drifting lattices, fetched after first paint. It steps down to CSS when the frame rate
- *   sags or the context is lost, and pauses in a hidden tab.
+ *   with drifting lattices, fetched once the page has loaded and the browser is idle. It steps
+ *   down to CSS when the frame rate sags or the context is lost, and pauses in a hidden tab.
  * Tier 0 also marks <html data-home-still> so the page's floating cards hold still.
  */
 export function HomeBackdrop() {
@@ -29,7 +31,23 @@ export function HomeBackdrop() {
     setTier(chosen);
     const root = document.documentElement;
     if (chosen === 0) root.dataset.homeStill = "true";
-    const cancel = whenIdle(() => setLoad(true));
+    // The hero (the LCP heading and the Proof Gate) gets the main thread first: the WebGL backdrop
+    // starts only after the page has loaded, a short pause, and an idle moment. The CSS layers
+    // cover the screen until then.
+    let cancelIdle = () => {};
+    let timer = 0;
+    const start = () => {
+      timer = window.setTimeout(() => {
+        cancelIdle = whenIdle(() => setLoad(true));
+      }, BACKDROP_DELAY_MS);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    const cancel = () => {
+      window.removeEventListener("load", start);
+      window.clearTimeout(timer);
+      cancelIdle();
+    };
     const onVisibility = () => setShown(!document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {

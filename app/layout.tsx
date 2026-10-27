@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { config } from "@/lib/config";
 import { Providers } from "@/components/Providers";
 import { accountHintScript } from "@/lib/account/hint";
+import { landingScrollScript } from "@/lib/fx/landingScroll";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -22,6 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Before first paint: a returning device skips the landing page (see lib/account/hint.ts). */}
         <script dangerouslySetInnerHTML={{ __html: accountHintScript }} />
+        {/* A load or refresh of the landing page opens at the top (see lib/fx/landingScroll.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: landingScrollScript }} />
       </head>
       <body className="bg-bg font-sans text-[15px] text-text antialiased">
         <Providers>{children}</Providers>
