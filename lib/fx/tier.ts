@@ -38,7 +38,17 @@ export function stepDown(tier: Tier, fps: number): Tier {
   return tier;
 }
 
+// Probing creates (and then loses) a real WebGL2 context, which costs a GPU-process round trip.
+// The answer can't change during a page's life, so the landing page's two scenes (the Proof Gate
+// and the backdrop) share one probe.
+let webgl2Probe: boolean | null = null;
+
 function hasWebgl2(): boolean {
+  if (webgl2Probe === null) webgl2Probe = probeWebgl2();
+  return webgl2Probe;
+}
+
+function probeWebgl2(): boolean {
   try {
     const canvas = document.createElement("canvas");
     // A software renderer (failIfMajorPerformanceCaveat) counts as no WebGL2.
