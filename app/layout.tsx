@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(config.appUrl),
   title: { default: config.appName, template: `%s · ${config.appName}` },
   description:
-    "Deposit ZEC. Half stays ZEC and half becomes dollars. Private AI, search, health lookups, blockchain access and an anonymous inbox are paid from that dollar balance, one zero-knowledge proof per request.",
+    "Deposit ZEC. Half stays ZEC and half becomes dollars. Private AI, search, health lookups and an anonymous inbox are paid from that dollar balance, one zero-knowledge proof per request.",
   referrer: "no-referrer",
 };
 

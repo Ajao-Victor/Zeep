@@ -117,10 +117,10 @@ describe("zcash", () => {
 });
 
 describe("catalog", () => {
-  it("trusts only the five service routes as a next page", () => {
+  it("trusts only the service routes as a next page", () => {
     expect(serviceAt("/ai")?.id).toBe("ai");
     expect(serviceAt("/inbox")?.name).toBe("Anonymous inbox");
-    for (const path of [null, "", "/", "/wallet", "/services", "//evil.example/ai", "https://evil.example/ai", "/ai?x=1", "/AI"]) {
+    for (const path of [null, "", "/", "/chain", "/wallet", "/services", "//evil.example/ai", "https://evil.example/ai", "/ai?x=1", "/AI"]) {
       expect(serviceAt(path)).toBeNull();
     }
   });
