@@ -165,7 +165,9 @@
 /* Service cards tilt toward the pointer (components/landing/TiltLink.tsx sets --rx, --ry, --mx,
    --my) and a gold spotlight follows it. Fine pointers only; touch keeps the plain lift. */
 .home-tilt {
-  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  /* Flat at rest, so the text is never rasterised through a 3D transform; the tilt applies only
+     while a mouse is over the card, and eases back to flat when it leaves. */
+  transform: none;
   transition:
     transform var(--dur-slow) var(--curve-enter),
     border-color var(--dur-base) ease,
@@ -173,6 +175,7 @@
 }
 
 .home-tilt[data-tilt="on"] {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transition:
     transform 90ms linear,
     border-color var(--dur-base) ease,
