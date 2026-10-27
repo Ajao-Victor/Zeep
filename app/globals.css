@@ -105,30 +105,11 @@ body {
   animation: zeep-in 350ms ease;
 }
 
-.step-card {
-  transition:
-    transform 150ms ease,
-    background-color 150ms ease,
-    border-color 150ms ease;
-}
-
-.step-card:hover {
-  transform: scale(1.02);
-  border-color: var(--gold);
-  background: var(--raised);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .zeep-pulse,
   .zeep-in,
   .zeep-shake {
     animation: none;
-  }
-
-  .step-card,
-  .step-card:hover {
-    transition: background-color 150ms ease, border-color 150ms ease;
-    transform: none;
   }
 }
 

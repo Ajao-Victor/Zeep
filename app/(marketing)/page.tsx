@@ -1,9 +1,11 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SERVICES } from "@/lib/catalog";
 import { Faq } from "@/components/landing/Faq";
 import { ProofGateHero } from "@/components/landing/ProofGateHero";
 import { HomeBackdrop } from "@/components/fx/home-backdrop/HomeBackdrop";
+import { Reveal } from "@/components/landing/Reveal";
 import { ServiceCard } from "@/components/ServiceCard";
 
 export const metadata: Metadata = { title: "Pay once. Stay unlinkable." };
@@ -45,19 +47,25 @@ export default function HomePage() {
       </section>
 
       <section id="how" className="border-t border-line py-16">
-        <p className="text-[13px] text-muted">How it works</p>
-        <h2 className="mt-2.5 text-[32px] font-semibold tracking-[-0.025em]">Three steps, no identity.</h2>
+        <Reveal>
+          <p className="text-[13px] text-muted">How it works</p>
+          <h2 className="mt-2.5 text-[32px] font-semibold tracking-[-0.025em]">Three steps, no identity.</h2>
+        </Reveal>
         <div className="mt-9 grid gap-4 md:grid-cols-3">
           {[
             ["01", "Deposit any amount", "A fresh address, no memo. Pay from the in-app wallet or any other wallet. Whatever arrives is credited."],
             ["02", "One proof per request", "Each request spends dollars. The proof shows the payment, not who you are."],
             ["03", "Use it, or withdraw", "Four services share one private balance. Withdraw any amount above the minimum, in two parts about 10 and 20 minutes apart."],
-          ].map(([n, title, body]) => (
-            <article key={n} className="step-card h-full rounded-xl border border-line bg-surface p-6">
-              <div className="font-mono text-[12px] text-gold">{n}</div>
-              <h3 className="mt-3.5 text-[17px] font-medium tracking-[-0.01em]">{title}</h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
-            </article>
+          ].map(([n, title, body], index) => (
+            <Reveal key={n} delay={index * 120} className="h-full">
+              <div className="home-float h-full" style={{ "--float-delay": `${-index * 2.3}s` } as CSSProperties}>
+                <article className="glass-1 glass-edge relative h-full rounded-2xl border border-line p-6 shadow-elev-2 transition-colors duration-(--dur-base) hover:border-gold/40">
+                  <span className="inline-grid h-8 min-w-8 place-items-center rounded-lg border border-gold/30 bg-gold/10 px-2 font-mono text-[12px] text-gold">{n}</span>
+                  <h3 className="mt-4 text-[17px] font-medium tracking-[-0.01em]">{title}</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed text-muted">{body}</p>
+                </article>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
