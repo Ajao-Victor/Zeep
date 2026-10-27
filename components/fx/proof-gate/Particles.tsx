@@ -8,6 +8,14 @@ import { ANON, GOLD, IDENTITY, LANES } from "@/components/fx/proof-gate/layout";
 // One lane per service; the shader's lane array is sized from it.
 const LANE_COUNT = LANES.length;
 
+// laneY() as a chain of constant indices: "if (lane < 0.5) return uLanes[0]; … return uLanes[n-1];".
+// A loop that indexes the uniform array with its counter compiled wrongly on ANGLE/Metal and sent
+// almost every request to one lane, so the chain is generated instead.
+const LANE_Y = [
+  ...Array.from({ length: LANE_COUNT - 1 }, (_, index) => `    if (lane < ${index}.5) return uLanes[${index}];`),
+  `    return uLanes[${LANE_COUNT - 1}];`,
+].join("\n");
+
 export type Flow = {
   startX: number;
   endX: number;
@@ -49,11 +57,7 @@ const vertex = /* glsl */ `
   varying float vAlpha;
 
   float laneY(float lane) {
-    float y = uLanes[0];
-    for (int i = 1; i < ${LANE_COUNT}; i++) {
-      if (lane > float(i) - 0.5) y = uLanes[i];
-    }
-    return y;
+${LANE_Y}
   }
 
   void main() {
