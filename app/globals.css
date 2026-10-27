@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 @import "../styles/vault-door.css";
+@import "../styles/home.css";
 
 @theme inline {
   --color-bg: var(--bg);

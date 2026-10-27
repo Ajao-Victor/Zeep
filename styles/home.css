@@ -1,0 +1,278 @@
+/* The landing page's floating world: the full-page backdrop (components/fx/home-backdrop/) and the
+   glass sections that float over it (app/(marketing)/page.tsx, components/landing/).
+
+   The backdrop is fixed behind the page inside the landing <main>'s own stacking context, so it
+   sits above the opaque body background and below everything else. Only transform and opacity
+   animate; the glows, masks and gradients are painted once. The landing page never runs a proof
+   or a key derivation (it only shows to devices without a vault), so its loops can run smoothly.
+   Reduced motion, FX off (tier 0) and data saver: everything holds still. */
+
+.home-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, #15140f 0%, var(--bg) 45%, var(--void) 100%);
+}
+
+/* Aurora: three large soft lights that give the glass something to blur. */
+.home-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.home-orb-gold {
+  top: -12%;
+  right: -8%;
+  width: 46vmax;
+  height: 46vmax;
+  background: radial-gradient(circle, rgb(217 164 65 / 0.32), transparent 65%);
+  animation: home-drift-a 38s ease-in-out infinite alternate;
+}
+
+.home-orb-id {
+  top: 38%;
+  left: -14%;
+  width: 40vmax;
+  height: 40vmax;
+  background: radial-gradient(circle, rgb(127 167 201 / 0.2), rgb(181 138 201 / 0.12) 40%, transparent 68%);
+  animation: home-drift-b 46s ease-in-out infinite alternate;
+}
+
+.home-orb-anon {
+  bottom: -20%;
+  right: 18%;
+  width: 36vmax;
+  height: 36vmax;
+  background: radial-gradient(circle, rgb(244 242 238 / 0.1), transparent 62%);
+  animation: home-drift-c 52s ease-in-out infinite alternate;
+}
+
+/* The CSS vault floor: a gold grid laid back in perspective, running toward the viewer one cell
+   per loop so it never jumps. Shown on tiers 0 and 1, and until the WebGL floor has drawn. */
+.home-grid {
+  position: absolute;
+  inset: 45% -50% -10%;
+  perspective: 520px;
+  perspective-origin: 50% 0%;
+  transition: opacity var(--dur-cinematic) linear;
+  -webkit-mask: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  mask: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+.home-grid-plane {
+  position: absolute;
+  inset: -64px 0 0;
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgb(217 164 65 / 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(217 164 65 / 0.55) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform-origin: 50% 0%;
+  transform: rotateX(74deg);
+  will-change: transform;
+}
+
+.home-backdrop[data-tier="1"] .home-grid-plane {
+  animation: home-grid-run 3.2s linear infinite;
+}
+
+.home-canvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--dur-cinematic) var(--curve-enter);
+}
+
+.home-backdrop[data-webgl="ready"] .home-canvas {
+  opacity: 1;
+}
+
+.home-backdrop[data-webgl="ready"] .home-grid {
+  opacity: 0;
+}
+
+/* Keeps text readable: darker toward the edges and under the header. */
+.home-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(15 15 14 / 0.65), transparent 22%),
+    radial-gradient(130% 100% at 50% 40%, transparent 55%, rgb(7 7 6 / 0.75));
+}
+
+.home-backdrop[data-tier="0"] .home-orb,
+.home-backdrop[data-tier="pending"] .home-orb {
+  animation: none;
+}
+
+@keyframes home-drift-a {
+  to {
+    transform: translate3d(-12vmax, 10vmax, 0) scale(1.15);
+  }
+}
+
+@keyframes home-drift-b {
+  to {
+    transform: translate3d(14vmax, -8vmax, 0) scale(0.9);
+  }
+}
+
+@keyframes home-drift-c {
+  to {
+    transform: translate3d(-10vmax, -12vmax, 0) scale(1.2);
+  }
+}
+
+@keyframes home-grid-run {
+  to {
+    transform: rotateX(74deg) translate3d(0, 64px, 0);
+  }
+}
+
+/* ---- Floating glass sections ---- */
+
+/* A slow bob, offset per card with --float-delay so they never move in step. */
+.home-float {
+  animation: home-float 7s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
+
+@keyframes home-float {
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+/* Rise in once on first scroll into view (components/landing/Reveal.tsx). Content that is already
+   on screen, or any content without JavaScript, is never hidden. */
+.home-reveal {
+  transition:
+    opacity var(--dur-cinematic) var(--curve-enter),
+    transform var(--dur-cinematic) var(--curve-enter);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.home-reveal[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.98);
+}
+
+/* Service cards tilt toward the pointer (components/landing/TiltLink.tsx sets --rx, --ry, --mx,
+   --my) and a gold spotlight follows it. Fine pointers only; touch keeps the plain lift. */
+.home-tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition:
+    transform var(--dur-slow) var(--curve-enter),
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
+}
+
+.home-tilt[data-tilt="on"] {
+  transition:
+    transform 90ms linear,
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
+}
+
+.home-tilt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgb(217 164 65 / 0.16), transparent 65%);
+  opacity: 0;
+  transition: opacity var(--dur-slow) ease;
+  pointer-events: none;
+}
+
+.home-tilt:hover {
+  border-color: rgb(217 164 65 / 0.45);
+  box-shadow: var(--elev-2), 0 0 48px -12px var(--gold-glow);
+}
+
+.home-tilt:hover::after {
+  opacity: 1;
+}
+
+.home-tilt .home-arrow {
+  transition: transform var(--dur-base) var(--curve-enter);
+}
+
+.home-tilt:hover .home-arrow {
+  transform: translate3d(4px, 0, 0);
+}
+
+/* A slowly turning dashed ring and a gold halo behind the services grid. */
+.home-halo {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: min(900px, 120vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(217 164 65 / 0.12), transparent 60%);
+}
+
+.home-halo::before,
+.home-halo::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed rgb(217 164 65 / 0.22);
+}
+
+.home-halo::before {
+  inset: 18%;
+  animation: home-turn 80s linear infinite;
+}
+
+.home-halo::after {
+  inset: 30%;
+  border-color: rgb(244 242 238 / 0.12);
+  animation: home-turn 60s linear infinite reverse;
+}
+
+@keyframes home-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-orb,
+  .home-grid-plane,
+  .home-float,
+  .home-halo::before,
+  .home-halo::after {
+    animation: none !important;
+  }
+
+  .home-reveal {
+    transition: none;
+  }
+
+  .home-reveal[data-reveal="hidden"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .home-tilt {
+    transform: none !important;
+  }
+}
+
+[data-home-still] .home-float,
+[data-home-still] .home-halo::before,
+[data-home-still] .home-halo::after {
+  animation: none;
+}
+
+[data-home-still] .home-tilt {
+  transform: none !important;
+}
