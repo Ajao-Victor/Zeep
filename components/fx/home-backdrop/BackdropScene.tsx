@@ -209,22 +209,26 @@ function Lattices({ count, travel }: { count: number; travel: { current: number 
 
   useEffect(() => () => lattices.forEach((lattice) => lattice.geometry.dispose()), [lattices]);
 
+  const screen = useMemo(() => new THREE.Vector3(), []);
+
   useFrame((state, delta) => {
     const node = group.current;
     if (!node) return;
     const time = state.clock.elapsedTime;
+    const { smoothstep } = THREE.MathUtils;
     node.children.forEach((child, index) => {
       const lattice = lattices[index];
       const z = ((((lattice.z + time * 1.4 + travel.current) % DEPTH) + DEPTH) % DEPTH) - DEPTH;
       child.position.set(lattice.x, lattice.y + Math.sin(time * 0.5 + lattice.bob) * 0.6, z);
       child.rotation.x += delta * lattice.spin;
       child.rotation.y += delta * lattice.spin * 0.7;
-      // Visible only in the near part of the field, where perspective has pushed them out to the
-      // sides; far away they would project behind the page's text.
+      // Fade with depth, and show only where the solid lands in the outer bands of the screen, so
+      // it never drifts behind the page's text, whatever the viewport's shape.
       const near = 1 + z / DEPTH;
+      const edge = Math.abs(screen.copy(child.position).project(state.camera).x);
       const line = child as THREE.LineSegments<THREE.EdgesGeometry, THREE.LineBasicMaterial>;
-      const { smoothstep } = THREE.MathUtils;
-      line.material.opacity = smoothstep(near, 0.55, 0.75) * (1 - smoothstep(near, 0.9, 1)) * 0.32;
+      const depth = smoothstep(near, 0.3, 0.5) * (1 - smoothstep(near, 0.9, 1));
+      line.material.opacity = depth * smoothstep(edge, 0.62, 0.82) * 0.34;
     });
   });
 
