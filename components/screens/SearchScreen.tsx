@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiBase } from "@/lib/config";
+import { zeepFetch } from "@/lib/api/zfetch";
 import { formatCredits } from "@/lib/zeep";
 import { isFundsError, payJson, requestError } from "@/lib/zeep/pay";
 import { readSession } from "@/lib/vault/session";
@@ -76,7 +77,7 @@ export function SearchScreen() {
   useEffect(() => {
     if (!jobId || researchStatus === "completed" || researchStatus === "failed") return;
     const timer = window.setInterval(() => {
-      void fetch(`${apiBase(view.network)}/v1/jobs/${jobId}`)
+      void zeepFetch(view.network)(`${apiBase(view.network)}/v1/jobs/${jobId}`)
         .then(async (response) => {
           if (!response.ok) throw new Error(`The research job returned ${response.status}.`);
           return response.json() as Promise<{ status?: string; result?: unknown }>;

@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { VaultState } from "@/components/VaultState";
 import { SignedInRedirect } from "@/components/landing/SignedInRedirect";
+import { config } from "@/lib/config";
 
 export { useVault } from "@/components/VaultState";
 export type { VaultView } from "@/components/VaultState";
@@ -21,6 +22,9 @@ export function Providers({ children }: { children: ReactNode }) {
         defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
       }),
   );
+  if (config.network === "mainnet" && !config.ohttpKey.mainnet) {
+    return <p className="px-8 py-16 text-[15px]">This build is missing its privacy key</p>;
+  }
   return (
     <QueryClientProvider client={client}>
       <ToastProvider>

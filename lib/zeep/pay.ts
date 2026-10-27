@@ -25,6 +25,8 @@ export function requestError(cause: unknown, fallback: string): string {
     const amount = limit === undefined ? "" : ` (${formatUsd(limit)})`;
     return `You've reached your daily limit${amount}. Raise it in Settings or try again after midnight UTC.`;
   }
+  if (cause instanceof ZeepApiError && cause.code === "ohttp_key") return "Zeep updated its privacy key. Reload the page.";
+  if (cause instanceof ZeepApiError && cause.code === "ohttp_decrypt") return "The request was damaged on the way. Try again.";
   const message = cause instanceof Error ? cause.message : "";
   if (/upstream payment was not accepted/i.test(message)) return BUSY;
   return message || fallback;

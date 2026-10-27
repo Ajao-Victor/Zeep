@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiBase, type Network } from "@/lib/config";
+import { zeepFetch } from "@/lib/api/zfetch";
 import {
   chainInfoSchema,
   healthSchema,
@@ -40,7 +41,7 @@ async function request(
   if (init.proof) headers.set("x-zeep-proof", init.proof);
   let response: Response;
   try {
-    response = await fetch(`${base}${path}`, {
+    response = await zeepFetch(network)(`${base}${path}`, {
       method: init.method ?? "GET",
       headers,
       body: init.body === undefined ? undefined : JSON.stringify(init.body),

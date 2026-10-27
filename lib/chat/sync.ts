@@ -1,4 +1,5 @@
 import { apiBase, type Network } from "@/lib/config";
+import { zeepFetch } from "@/lib/api/zfetch";
 import type { ZeepKeys } from "@/lib/zeep";
 import { deleteLocalChats, loadChats, openChatBlob, saveChat } from "@/lib/chat/store";
 import type { Chat } from "@/lib/chat/types";
@@ -18,7 +19,7 @@ export function expiresAt(chat: Chat, autodelete: boolean): string | null {
 }
 
 export async function pushChat(network: Network, keys: ZeepKeys, chat: Chat, blob: string, autodelete: boolean): Promise<void> {
-  const response = await fetch(`${apiBase(network)}/v1/vault/items/chat-${chat.id}`, {
+  const response = await zeepFetch(network)(`${apiBase(network)}/v1/vault/items/chat-${chat.id}`, {
     method: "PUT",
     headers: headers(keys),
     body: JSON.stringify({ blob, expires_at: expiresAt(chat, autodelete) }),
@@ -29,7 +30,7 @@ export async function pushChat(network: Network, keys: ZeepKeys, chat: Chat, blo
 }
 
 export async function pullChats(network: Network, keys: ZeepKeys, autodelete: boolean): Promise<Chat[]> {
-  const list = await fetch(`${apiBase(network)}/v1/vault/items`, {
+  const list = await zeepFetch(network)(`${apiBase(network)}/v1/vault/items`, {
     headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth },
     credentials: "omit",
     referrerPolicy: "no-referrer",
@@ -42,7 +43,7 @@ export async function pullChats(network: Network, keys: ZeepKeys, autodelete: bo
   for (const item of body.items ?? []) {
     if (!item.item_id.startsWith("chat-")) continue;
     const id = item.item_id.slice(5);
-    const one = await fetch(`${apiBase(network)}/v1/vault/items/${item.item_id}`, {
+    const one = await zeepFetch(network)(`${apiBase(network)}/v1/vault/items/${item.item_id}`, {
       headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth },
       credentials: "omit",
       referrerPolicy: "no-referrer",
@@ -61,7 +62,7 @@ export async function pullChats(network: Network, keys: ZeepKeys, autodelete: bo
 }
 
 export async function deleteRemoteChat(network: Network, keys: ZeepKeys, id: string): Promise<void> {
-  const response = await fetch(`${apiBase(network)}/v1/vault/items/chat-${id}`, {
+  const response = await zeepFetch(network)(`${apiBase(network)}/v1/vault/items/chat-${id}`, {
     method: "DELETE",
     headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth },
     credentials: "omit",
@@ -74,7 +75,7 @@ export async function deleteRemoteChat(network: Network, keys: ZeepKeys, id: str
 
 export async function deleteRemoteVault(network: Network, keys: ZeepKeys): Promise<void> {
   await deleteLocalChats(network);
-  const response = await fetch(`${apiBase(network)}/v1/vault`, {
+  const response = await zeepFetch(network)(`${apiBase(network)}/v1/vault`, {
     method: "DELETE",
     headers: { "x-vault-id": keys.vaultId, "x-vault-auth": keys.vaultAuth },
     credentials: "omit",

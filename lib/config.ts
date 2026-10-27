@@ -33,6 +33,11 @@ export const config = {
     testnet: process.env.NEXT_PUBLIC_API_BASE_URL_TESTNET || "",
     mainnet: process.env.NEXT_PUBLIC_API_BASE_URL_MAINNET || "",
   },
+  /** OHTTP key config baked into the build. Never loaded from the API. */
+  ohttpKey: {
+    testnet: process.env.NEXT_PUBLIC_OHTTP_KEY_CONFIG_TESTNET || "",
+    mainnet: process.env.NEXT_PUBLIC_OHTTP_KEY_CONFIG || "",
+  },
   onionApi: {
     testnet: process.env.NEXT_PUBLIC_ONION_API_URL_TESTNET || "",
     mainnet: process.env.NEXT_PUBLIC_ONION_API_URL_MAINNET || "",

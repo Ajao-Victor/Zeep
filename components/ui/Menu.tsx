@@ -6,7 +6,8 @@ import { cx } from "@/lib/cx";
 
 /**
  * A floating glass panel for Radix dropdown menus: glass-2 with the lit edge and the highest
- * elevation, grown from the trigger. The list scrolls inside, so the edge stays put.
+ * elevation, grown from the trigger. The panel scrolls when the list is taller than the space
+ * above or below the button, so every item stays reachable.
  */
 export function MenuContent({
   children,
@@ -27,11 +28,11 @@ export function MenuContent({
         sideOffset={8}
         collisionPadding={16}
         className={cx(
-          "pop-in glass-2 glass-edge relative z-50 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line-strong p-1 shadow-elev-2 outline-none",
+          "pop-in glass-2 glass-edge relative z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line-strong p-1 shadow-elev-2 outline-none",
           className,
         )}
       >
-        <div className="max-h-80 overflow-y-auto">{children}</div>
+        {children}
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
   );

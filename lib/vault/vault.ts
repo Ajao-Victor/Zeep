@@ -1,4 +1,5 @@
 import { config, apiBase, type Network } from "@/lib/config";
+import { zeepFetch } from "@/lib/api/zfetch";
 import { fromHex, hex, randomBytes, zero } from "@/lib/bytes";
 import { deriveKeys, NoteBook, seedFromPhrase, USD, ZEC, ZeepClient } from "@/lib/zeep";
 import { workerProve, stopProver } from "@/lib/zeep/prove";
@@ -77,6 +78,7 @@ async function openSession(network: Network, key: CryptoKey, meta: VaultMeta, re
   }
   const client = new ZeepClient({
     baseUrl: apiBase(network),
+    fetch: zeepFetch(network),
     keys,
     book,
     prove: workerProve,

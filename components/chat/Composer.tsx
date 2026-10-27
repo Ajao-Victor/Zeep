@@ -142,7 +142,7 @@ export function Composer({
               </svg>
             </Button>
           </DropdownMenu.Trigger>
-          <MenuContent side="top" align="start">
+          <MenuContent side="top" align="start" className="w-[min(26rem,calc(100vw-2rem))]">
             <DropdownMenu.RadioGroup value={model?.id ?? ""} onValueChange={onModel}>
               {(prices?.models ?? []).map((item) => (
                 <ModelRow key={item.id} item={item} perCredit={prices?.micro_usd_per_credit ?? 1_000_000} />
@@ -173,8 +173,9 @@ function ModelRow({ item, perCredit }: { item: PriceModel; perCredit: number }) 
       <span className="flex items-center justify-between gap-3">
         <span className="min-w-0">
           <span className="block truncate text-[14px]">{item.name}</span>
-          {item.detail ? <span className="block truncate text-[12px] text-faint">{item.detail}</span> : null}
-          {item.vision ? <span className="mt-1 inline-block rounded-full border border-line px-2 py-0.5 text-[11px] text-muted">reads images</span> : null}
+          <span className="block truncate text-[12px] text-faint">
+            {[item.detail, item.vision ? "reads images" : ""].filter(Boolean).join(" · ") || "\u00a0"}
+          </span>
         </span>
         <span className="shrink-0 font-mono text-[12px] text-gold">from {formatCredits(item.micro_usd, perCredit)} cr</span>
       </span>
